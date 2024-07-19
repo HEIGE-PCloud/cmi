@@ -2,6 +2,7 @@ import requests
 import urllib3
 import logging
 
+from order_book import OrderBook
 from product import ProductList
 
 logger = logging.getLogger(__name__)
@@ -52,16 +53,29 @@ def log_in(username: str, password: str) -> BearerAuth:
 
 def get_product(auth: BearerAuth) -> ProductList:
     PATH = "/product"
+    logger.info(f"Getting products")
     res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
     ensure_success(res, "Get product failed!")
     product_list = ProductList(res.json())
+    logger.info(f"Getting product list success: {product_list}")
     return product_list
+
+
+def get_order_book(auth: BearerAuth, product_name: str) -> OrderBook:
+    PATH = f"/product/{product_name}/order-book/current-user"
+    logger.info(f"Getting the order book for product: {product_name}")
+    res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
+    ensure_success(res, "Get order book failed!")
+    order_book = OrderBook(**res.json())
+    logger.info(f"Getting order book success: {order_book}")
+    return order_book
 
 
 def main():
     auth = log_in("test4", "test4")
     product_list = get_product(auth)
-    print(product_list)
+    product0 = product_list.root[0]
+    get_order_book(auth, product0.symbol)
 
 
 if __name__ == "__main__":
