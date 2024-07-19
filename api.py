@@ -2,6 +2,8 @@ import requests
 import urllib3
 import logging
 
+from product import ProductList
+
 logger = logging.getLogger(__name__)
 
 urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
@@ -36,7 +38,7 @@ def sign_up(username: str, password: str):
     logger.info("Signing up success")
 
 
-def log_in(username: str, password: str):
+def log_in(username: str, password: str) -> BearerAuth:
     PATH = "/user/authenticate"
     logger.info(f"Logging in with username: {username} password: {password}")
     res = requests.post(
@@ -45,20 +47,21 @@ def log_in(username: str, password: str):
     ensure_success(res, "Log in failed!")
     bearer_token = res.headers["Authorization"]
     logger.info(f"Logging in success with bearer token {bearer_token}")
-    return bearer_token
+    return BearerAuth(bearer_token)
 
 
-def get_product(auth: BearerAuth):
+def get_product(auth: BearerAuth) -> ProductList:
     PATH = "/product"
     res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
     ensure_success(res, "Get product failed!")
-    print(res.json())
+    product_list = ProductList(res.json())
+    return product_list
 
 
 def main():
-    bearer_token = log_in("test4", "test4")
-    auth = BearerAuth(bearer_token)
-    get_product(auth)
+    auth = log_in("test4", "test4")
+    product_list = get_product(auth)
+    print(product_list)
 
 
 if __name__ == "__main__":
