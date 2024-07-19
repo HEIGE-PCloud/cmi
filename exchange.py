@@ -1,4 +1,4 @@
-from api import get_product, send_order, sign_in, sign_up
+from api import get_all_products, send_order, sign_in, sign_up
 from order import Order
 
 
@@ -37,4 +37,4 @@ class Exchange:
         """
         Update all products on the exchange.
         """
-        self.products = get_product(self.auth)
+        self.products = get_all_products(self.auth)

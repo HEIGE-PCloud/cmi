@@ -1,5 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel
+from typing import List
+from pydantic import BaseModel, RootModel
 
 
 class Side(str, Enum):
@@ -13,4 +14,6 @@ class Order(BaseModel):
     price: float
     volume: int
     product: str
-    
+
+
+OrderList = RootModel[List[Order]]
