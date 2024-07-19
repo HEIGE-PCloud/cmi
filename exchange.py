@@ -1,4 +1,5 @@
-from api import get_product, sign_in, sign_up
+from api import get_product, send_order, sign_in, sign_up
+from order import Order
 
 
 class Exchange:
@@ -8,11 +9,11 @@ class Exchange:
         self.auth = sign_in(username, password)
         self.update_products()
 
-    def insert_order(self):
+    def insert_order(self, order: Order):
         """
         Insert a limit order on an instrument.
         """
-        pass
+        send_order(self.auth, order)
 
     def delete_order(self):
         """

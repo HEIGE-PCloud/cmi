@@ -2,6 +2,7 @@ import requests
 import urllib3
 import logging
 
+from order import Order, Side
 from order_book import OrderBook
 from product import ProductList
 
@@ -69,12 +70,21 @@ def get_order_book(auth: BearerAuth, product_name: str) -> OrderBook:
     logger.info(f"Getting order book success: {order_book}")
     return order_book
 
+def send_order(auth: BearerAuth, order: Order):
+    PATH = "/order"
+    logger.info(f"Sending new order: {order}")
+    res = requests.post(ENDPOINT + PATH, json=order.model_dump(), auth=auth, verify=False)
+    if not res.ok:
+        logger.error(f"Failed to send new order: {res.json()['message']}")
+        return
+    logger.info("Sending new order success") 
 
 def main():
     auth = sign_in("test4", "test4")
     product_list = get_product(auth)
     product0 = product_list.root[0]
     get_order_book(auth, product0.symbol)
+    send_order(auth, Order(side=Side.BUY, price=0, volume=1, product=product0.symbol))
 
 
 if __name__ == "__main__":
