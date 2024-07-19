@@ -9,11 +9,19 @@ class Side(str, Enum):
 
 
 # {"side": "BUY", "price": 1.4, "volume": 1, "product": "75 C"}
-class Order(BaseModel):
+class OrderRequest(BaseModel):
     side: Side
     price: float
     volume: int
     product: str
 
 
-OrderList = RootModel[List[Order]]
+class OrderResponse(BaseModel):
+    id: str
+    side: Side
+    price: float
+    volume: int
+    product: str
+
+
+OrderList = RootModel[List[OrderResponse]]

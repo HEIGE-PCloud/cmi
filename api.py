@@ -1,8 +1,10 @@
+from json import JSONDecodeError
+from typing import Optional
 import requests
 import urllib3
 import logging
 
-from order import Order, OrderList, Side
+from order import OrderRequest, OrderList, Side
 from order_book import OrderBook
 from product import ProductList
 
@@ -25,12 +27,18 @@ ENDPOINT = "https://cmi-exchange/api"
 
 def ensure_success(response: requests.Response, message: str, *, fail_hard = False):
     if response.ok:
-        return
-    error_message = f"{message}\n{response.json()["message"]}"
+        return True
+    error_message = message
+    try:    
+        error_message = f"{message}\n{response.json()["message"]}"
+    except JSONDecodeError:
+        pass
+
     if fail_hard:
         raise Exception(error_message)
     else:
         logger.error(error_message)
+        return False
 
 
 def sign_up(username: str, password: str):
@@ -67,39 +75,48 @@ def get_all_products(auth: BearerAuth) -> ProductList:
     return product_list
 
 
-def get_order_book(auth: BearerAuth, product_name: str) -> OrderBook:
+def get_order_book(auth: BearerAuth, product_name: str) -> Optional[OrderBook]:
     PATH = f"/product/{product_name}/order-book/current-user"
     logger.info(f"Getting the order book for product: {product_name}")
     res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
-    ensure_success(res, "Get order book failed!")
-    order_book = OrderBook(**res.json())
-    logger.info(f"Getting order book success: {order_book}")
-    return order_book
+    if ensure_success(res, "Get order book failed!"):
+        order_book = OrderBook(**res.json())
+        logger.info(f"Getting order book success: {order_book}")
+        return order_book
+    return None
 
-def send_order(auth: BearerAuth, order: Order):
+def send_order(auth: BearerAuth, order: OrderRequest):
     PATH = "/order"
     logger.info(f"Sending new order: {order}")
     res = requests.post(ENDPOINT + PATH, json=order.model_dump(), auth=auth, verify=False)
-    ensure_success(res, "Failed to send new order")
-    if res.ok:
+    if ensure_success(res, "Failed to send new order"):
         logger.info("Sending new order success") 
 
-def get_current_orders(auth: BearerAuth) -> OrderList:
+def get_current_orders(auth: BearerAuth) -> Optional[OrderList]:
     PATH = "/order/current-user"
     logger.info("Getting current orders")
     res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
-    ensure_success(res, "Get current orders failed!")
-    order_list = OrderList(res.json())
-    logger.info(f"Getting current orders success: {order_list}")
-    return order_list
+    if ensure_success(res, "Get current orders failed!"):        
+        order_list = OrderList(res.json())
+        logger.info(f"Getting current orders success: {order_list}")
+        return order_list
+    return None
+
+def delete_order(auth: BearerAuth, id: str):
+    PATH = f"/order/{id}"
+    logger.info(f"Deleting order {id}")
+    res = requests.delete(ENDPOINT + PATH, auth=auth, verify=False)
+    if ensure_success(res, "Delete order failed!"):
+        logger.info("Deleting order success")
 
 def main():
-    auth = sign_in("test4", "test4")
+    auth = sign_in("Junrong", "ads100")
     product_list = get_all_products(auth)
     product0 = product_list.root[0]
     get_order_book(auth, product0.symbol)
-    send_order(auth, Order(side=Side.BUY, price=0, volume=1, product=product0.symbol))
+    send_order(auth, OrderRequest(side=Side.BUY, price=0, volume=1, product=product0.symbol))
     get_current_orders(auth)
+    delete_order(auth, "1")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
