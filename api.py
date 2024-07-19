@@ -23,8 +23,7 @@ ENDPOINT = "https://cmi-exchange/api"
 
 
 def ensure_success(response: requests.Response, message: str):
-    if not response.ok:
-        raise Exception(message + "\n" + response.json()["message"])
+    assert response.ok, f"{message}\n{response.json()["message"]}"
 
 
 def sign_up(username: str, password: str):
@@ -39,15 +38,15 @@ def sign_up(username: str, password: str):
     logger.info("Signing up success")
 
 
-def log_in(username: str, password: str) -> BearerAuth:
+def sign_in(username: str, password: str) -> BearerAuth:
     PATH = "/user/authenticate"
-    logger.info(f"Logging in with username: {username} password: {password}")
+    logger.info(f"Signing in with username: {username} password: {password}")
     res = requests.post(
         ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
     )
-    ensure_success(res, "Log in failed!")
+    ensure_success(res, "Sign in failed!")
     bearer_token = res.headers["Authorization"]
-    logger.info(f"Logging in success with bearer token {bearer_token}")
+    logger.info(f"Signing in success with bearer token {bearer_token}")
     return BearerAuth(bearer_token)
 
 
@@ -72,7 +71,7 @@ def get_order_book(auth: BearerAuth, product_name: str) -> OrderBook:
 
 
 def main():
-    auth = log_in("test4", "test4")
+    auth = sign_in("test4", "test4")
     product_list = get_product(auth)
     product0 = product_list.root[0]
     get_order_book(auth, product0.symbol)
