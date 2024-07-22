@@ -1,8 +1,11 @@
 import logging
 import queue
+import time
+from typing import Dict, List
 
-from api import BearerAuth, send_order
+from api import BearerAuth, get_order_book, send_order
 from order import OrderRequest
+from order_book import OrderBook
 
 logger = logging.getLogger(__name__)
 
@@ -15,3 +18,10 @@ def order_sender(queue: queue.Queue[OrderRequest], auth: BearerAuth):
         queue.task_done()
 
 
+def market_feeder(products: List[str], order_books: Dict[str, OrderBook], auth: BearerAuth):
+    while True:
+        for product in products:
+            res = get_order_book(auth, product)
+            if res is not None:
+                order_books[product] = res
+        time.sleep(0.05)

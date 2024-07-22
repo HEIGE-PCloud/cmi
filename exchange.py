@@ -1,8 +1,10 @@
 import queue
 import threading
+from typing import Dict, List
 from api import delete_order, get_all_products, sign_in, sign_up
-from connectivity import order_sender
+from connectivity import market_feeder, order_sender
 from order import OrderRequest
+from order_book import OrderBook
 
 
 class Exchange:
@@ -14,8 +16,17 @@ class Exchange:
         self._order_sender_queue: queue.Queue[OrderRequest] = queue.Queue()
         self._order_canceller_queue: queue.Queue[None] = queue.Queue()
         self._order_sender_thread = threading.Thread(
-            target=order_sender, args=[self._order_sender_queue, self._auth], daemon=True
+            target=order_sender,
+            args=[self._order_sender_queue, self._auth],
+            daemon=True,
         )
+        self._order_book: Dict[str, OrderBook] = {}
+        self._market_feed_thread = threading.Thread(
+            target=market_feeder,
+            args=[self.get_products_symbols(), self._order_book, self._auth],
+            daemon=True,
+        )
+        self._market_feed_thread.start()
         self._order_sender_thread.start()
 
     def insert_order(self, order: OrderRequest):
@@ -40,13 +51,20 @@ class Exchange:
         """
         Return all products on the exchange.
         """
-        return self.products
+        return self._products
+
+    def get_products_symbols(self) -> List[str]:
+        """
+        Return a list of product symbol names
+        """
+        return [product.symbol for product in self._products.root]
 
     def update_products(self):
         """
         Update all products on the exchange.
         """
-        self.products = get_all_products(self._auth)
-        
+        self._products = get_all_products(self._auth)
+
     def join(self):
         self._order_sender_queue.join()
+        self._market_feed_thread.join()
