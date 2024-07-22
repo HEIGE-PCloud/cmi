@@ -6,10 +6,11 @@ from order_book import OrderBook
 
 
 class Hitter:
-    def __init__(self, symbol: str, low_price: float, high_price: float) -> None:
+    def __init__(self, symbol: str, low_price: float, high_price: float, active: bool = False) -> None:
         self._symbol = symbol
         self._low_price = low_price
         self._high_price = high_price
+        self._active = active
 
     def get_symbol(self) -> str:
         return self._symbol
@@ -34,7 +35,12 @@ class Hitter:
         if new_price > self._low_price:
             self._high_price = new_price
 
+    def set_active(self, active: bool) -> None:
+        self._active = active
+
     def trade(self, order_book: OrderBook) -> List[OrderRequest]:
+        if not self._active:
+            return []
         orders: List[OrderRequest] = []
         buy_volume = 0
         sell_volume = 0
