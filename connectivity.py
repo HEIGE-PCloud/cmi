@@ -1,5 +1,6 @@
 import logging
 import queue
+import threading
 import time
 from typing import Dict, List
 
@@ -18,10 +19,11 @@ def order_sender(queue: queue.Queue[OrderRequest], auth: BearerAuth):
         queue.task_done()
 
 
-def market_feeder(products: List[str], order_books: Dict[str, OrderBook], auth: BearerAuth):
+def market_feeder(lock: threading.Lock, products: List[str], order_books: Dict[str, OrderBook], auth: BearerAuth):
     while True:
         for product in products:
             res = get_order_book(auth, product)
             if res is not None:
-                order_books[product] = res
-        time.sleep(0.05)
+                with lock:
+                    order_books[product] = res
+        time.sleep(0.01)

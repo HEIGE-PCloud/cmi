@@ -1,5 +1,6 @@
 import queue
 import threading
+import time
 from typing import Dict, List
 from api import delete_order, get_all_products, sign_in, sign_up
 from connectivity import market_feeder, order_sender
@@ -19,6 +20,7 @@ class Exchange:
         if sign_up_for_new_account:
             sign_up(username, password)
         self._auth = sign_in(username, password)
+        self._order_book_lock = threading.Lock()
         self.update_products()
         self._hitters = hitters
         self.verify_hitters()
@@ -32,7 +34,7 @@ class Exchange:
         self._order_book: Dict[str, OrderBook] = {}
         self._market_feed_thread = threading.Thread(
             target=market_feeder,
-            args=[self.get_products_symbols(), self._order_book, self._auth],
+            args=[self._order_book_lock, self.get_products_symbols(), self._order_book, self._auth],
             daemon=True,
         )
         self._market_feed_thread.start()
@@ -82,9 +84,14 @@ class Exchange:
             ), f"Invalid hitter: {hitter.get_symbol()}, valid products: {self.get_products_symbols()}"
             for product in self._products:
                 if product.symbol == hitter.get_symbol():
-                    hitter.init(product.tickSize, product.startingPrice, product.contractSize)
+                    hitter.init(self._order_book_lock, product.tickSize, product.startingPrice, product.contractSize)
                     break
 
-    def join(self):
-        self._order_sender_queue.join()
-        self._market_feed_thread.join()
+    def trade(self):
+        while True:
+            for hitter in self._hitters:
+                if hitter.get_symbol() in self._order_book:                    
+                    orders = hitter.trade(self._order_book[hitter.get_symbol()])
+                    for order in orders:
+                        self._order_sender_queue.put(order)
+            time.sleep(0.01)

@@ -21,7 +21,7 @@ from pydantic import BaseModel, RootModel
 
 class BuyOrder(BaseModel):
     price: float
-    volume: float
+    volume: int
 
 
 BuyOrderList = RootModel[List[BuyOrder]]
@@ -29,7 +29,7 @@ BuyOrderList = RootModel[List[BuyOrder]]
 
 class SellOrder(BaseModel):
     price: float
-    volume: float
+    volume: int
 
 
 SellOrderList = RootModel[List[SellOrder]]

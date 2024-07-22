@@ -21,7 +21,7 @@ def main():
     cmi.insert_order(
         order=OrderRequest(side=Side.BUY, price=0, volume=1, product="75 C")
     )
-    cmi.join()
+    cmi.trade()
 
 
 if __name__ == "__main__":
