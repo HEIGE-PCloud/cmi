@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
+s = requests.Session()
 
 class BearerAuth(requests.auth.AuthBase):
     def __init__(self, token: str):
@@ -44,7 +45,7 @@ def ensure_success(response: requests.Response, message: str, *, fail_hard = Fal
 def sign_up(username: str, password: str):
     PATH = "/user"
     logger.info(f"Signing up with username: {username} password: {password}")
-    res = requests.post(
+    res = s.post(
         ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
     )
     ensure_success(res, "Sign up failed!", fail_hard=True)
@@ -56,7 +57,7 @@ def sign_up(username: str, password: str):
 def sign_in(username: str, password: str) -> BearerAuth:
     PATH = "/user/authenticate"
     logger.info(f"Signing in with username: {username} password: {password}")
-    res = requests.post(
+    res = s.post(
         ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
     )
     ensure_success(res, "Sign in failed!", fail_hard=True)
@@ -68,7 +69,7 @@ def sign_in(username: str, password: str) -> BearerAuth:
 def get_all_products(auth: BearerAuth) -> ProductResponseList:
     PATH = "/product"
     logger.info(f"Getting products")
-    res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
     ensure_success(res, "Get product failed!", fail_hard=True)
     product_list = ProductResponseList(res.json())
     logger.info(f"Getting product list success: {product_list}")
@@ -78,7 +79,7 @@ def get_all_products(auth: BearerAuth) -> ProductResponseList:
 def get_order_book(auth: BearerAuth, product_name: str) -> Optional[OrderBook]:
     PATH = f"/product/{product_name}/order-book/current-user"
     logger.info(f"Getting the order book for product: {product_name}")
-    res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Get order book failed!"):
         order_book = OrderBook(**res.json())
         logger.info(f"Getting order book success: {order_book}")
@@ -88,14 +89,14 @@ def get_order_book(auth: BearerAuth, product_name: str) -> Optional[OrderBook]:
 def send_order(auth: BearerAuth, order: OrderRequest):
     PATH = "/order"
     logger.info(f"Sending new order: {order}")
-    res = requests.post(ENDPOINT + PATH, json=order.model_dump(), auth=auth, verify=False)
+    res = s.post(ENDPOINT + PATH, json=order.model_dump(), auth=auth, verify=False)
     if ensure_success(res, "Failed to send new order"):
         logger.info("Sending new order success") 
 
 def get_current_orders(auth: BearerAuth) -> Optional[OrderList]:
     PATH = "/order/current-user"
     logger.info("Getting current orders")
-    res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Get current orders failed!"):        
         order_list = OrderList(res.json())
         logger.info(f"Getting current orders success: {order_list}")
@@ -105,14 +106,14 @@ def get_current_orders(auth: BearerAuth) -> Optional[OrderList]:
 def delete_order(auth: BearerAuth, id: str):
     PATH = f"/order/{id}"
     logger.info(f"Deleting order {id}")
-    res = requests.delete(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.delete(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Delete order failed!"):
         logger.info("Deleting order success")
         
 def delete_order_by_criteria(auth: BearerAuth, criteria: OrderCriteria):
     PATH = f"/order"
     logger.info(f"Delete order by criteria")
-    res = requests.delete(ENDPOINT + PATH, json=criteria.model_dump(), auth=auth, verify=False)
+    res = s.delete(ENDPOINT + PATH, json=criteria.model_dump(), auth=auth, verify=False)
     ensure_success(res, "Delete order by criteria failed!")
 
 def main():
