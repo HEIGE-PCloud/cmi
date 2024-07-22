@@ -3,16 +3,25 @@ import threading
 from typing import Dict, List
 from api import delete_order, get_all_products, sign_in, sign_up
 from connectivity import market_feeder, order_sender
+from hitter import Hitter
 from order import OrderRequest
 from order_book import OrderBook
 
 
 class Exchange:
-    def __init__(self, username: str, password: str, sign_up_for_new_account=True):
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        hitters: List[Hitter],
+        sign_up_for_new_account=True,
+    ):
         if sign_up_for_new_account:
             sign_up(username, password)
         self._auth = sign_in(username, password)
         self.update_products()
+        self._hitters = hitters
+        self.verify_hitters()
         self._order_sender_queue: queue.Queue[OrderRequest] = queue.Queue()
         self._order_canceller_queue: queue.Queue[None] = queue.Queue()
         self._order_sender_thread = threading.Thread(
@@ -57,13 +66,24 @@ class Exchange:
         """
         Return a list of product symbol names
         """
-        return [product.symbol for product in self._products.root]
+        return [product.symbol for product in self._products]
 
     def update_products(self):
         """
         Update all products on the exchange.
         """
-        self._products = get_all_products(self._auth)
+        self._products = get_all_products(self._auth).root
+
+    def verify_hitters(self):
+        symbols = self.get_products_symbols()
+        for hitter in self._hitters:
+            assert (
+                hitter.get_symbol() in symbols
+            ), f"Invalid hitter: {hitter.get_symbol()}, valid products: {self.get_products_symbols()}"
+            for product in self._products:
+                if product.symbol == hitter.get_symbol():
+                    hitter.init(product.tickSize, product.startingPrice, product.contractSize)
+                    break
 
     def join(self):
         self._order_sender_queue.join()
