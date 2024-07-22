@@ -4,7 +4,7 @@ import requests
 import urllib3
 import logging
 
-from order import OrderRequest, OrderList, Side
+from order import OrderCriteria, OrderRequest, OrderList, Side
 from order_book import OrderBook
 from product import ProductList
 
@@ -108,6 +108,12 @@ def delete_order(auth: BearerAuth, id: str):
     res = requests.delete(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Delete order failed!"):
         logger.info("Deleting order success")
+        
+def delete_order_by_criteria(auth: BearerAuth, criteria: OrderCriteria):
+    PATH = f"/order"
+    logger.info(f"Delete order by criteria")
+    res = requests.delete(ENDPOINT + PATH, json=criteria.model_dump(), auth=auth, verify=False)
+    ensure_success(res, "Delete order by criteria failed!")
 
 def main():
     auth = sign_in("Junrong", "ads100")
@@ -117,6 +123,7 @@ def main():
     send_order(auth, OrderRequest(side=Side.BUY, price=0, volume=1, product=product0.symbol))
     get_current_orders(auth)
     delete_order(auth, "1")
+    delete_order_by_criteria(auth, OrderCriteria(product=None, price=None, side=None))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
