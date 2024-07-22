@@ -6,7 +6,7 @@ import logging
 
 from order import OrderCriteria, OrderRequest, OrderList, Side
 from order_book import OrderBook
-from product import ProductList
+from product import ProductResponseList
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +65,12 @@ def sign_in(username: str, password: str) -> BearerAuth:
     return BearerAuth(bearer_token)
 
 
-def get_all_products(auth: BearerAuth) -> ProductList:
+def get_all_products(auth: BearerAuth) -> ProductResponseList:
     PATH = "/product"
     logger.info(f"Getting products")
     res = requests.get(ENDPOINT + PATH, auth=auth, verify=False)
     ensure_success(res, "Get product failed!", fail_hard=True)
-    product_list = ProductList(res.json())
+    product_list = ProductResponseList(res.json())
     logger.info(f"Getting product list success: {product_list}")
     return product_list
 

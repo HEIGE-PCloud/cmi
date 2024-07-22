@@ -30,11 +30,11 @@ from typing import List
 from pydantic import BaseModel, RootModel
 
 
-class Product(BaseModel):
+class ProductResponse(BaseModel):
     symbol: str
     tickSize: float
     startingPrice: float
     contractSize: float
 
 
-ProductList = RootModel[List[Product]]
+ProductResponseList = RootModel[List[ProductResponse]]
