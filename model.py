@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, RootModel
 
 
@@ -72,3 +72,63 @@ class ProductResponse(BaseModel):
 
 
 ProductResponseList = RootModel[List[ProductResponse]]
+
+
+# {
+#     "activeRoundName": "Cards 2",
+#     "acceptingOrders": false,
+#     "username": "test1",
+#     "userRanking": 17,
+#     "positionLimits": [
+#         {
+#             "productSymbol": "65 P",
+#             "shortLimit": 100,
+#             "longLimit": 100
+#         },
+#         {
+#             "productSymbol": "75 C",
+#             "shortLimit": 100,
+#             "longLimit": 100
+#         },
+#         {
+#             "productSymbol": "70 Straddle",
+#             "shortLimit": 100,
+#             "longLimit": 100
+#         },
+#         {
+#             "productSymbol": "Sum",
+#             "shortLimit": 50,
+#             "longLimit": 50
+#         }
+#     ]
+# }
+
+
+class PositionLimitResponse(BaseModel):
+    productSymbol: str
+    shortLimit: int
+    longLimit: int
+
+
+PositionLimitList = RootModel[List[PositionLimitResponse]]
+
+
+class StatusResponse(BaseModel):
+    activeRoundName: str
+    acceptingOrders: bool
+    username: str
+    userRanking: int
+    positionLimits: PositionLimitList
+
+
+class PositionLimit(BaseModel):
+    shortLimit: int
+    longLimit: int
+
+
+class MarketStatus(BaseModel):
+    activeRoundName: str = "Default Roundname"
+    acceptingOrders: bool = False
+    username: str = "Default Username"
+    userRanking: int = 0
+    positionLimits: Dict[str, PositionLimit] = {}

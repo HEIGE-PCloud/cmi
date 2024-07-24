@@ -3,9 +3,9 @@ import threading
 import time
 from typing import Dict, List
 from api import delete_order, get_all_products, sign_in, sign_up
-from connectivity import market_feeder, order_sender
+from connectivity import market_feeder, market_status, order_sender
 from hitter import Hitter
-from model import OrderRequest
+from model import MarketStatus, OrderRequest, PositionLimit
 from order_book import OrderBook
 
 
@@ -21,24 +21,51 @@ class Exchange:
             sign_up(username, password)
         self._auth = sign_in(username, password)
         self._order_book_lock = threading.Lock()
+
+        # Hitters setup
         self.update_products()
         self._hitters = hitters
         self.verify_hitters()
+
+        # Market status setups
+        self._market_status = MarketStatus()
+        for product in self._products:
+            self._market_status.positionLimits[product.symbol] = PositionLimit(shortLimit=0, longLimit=0)
+        self._market_status_thread = threading.Thread(
+            target=market_status,
+            args=[
+                self._market_status,
+                self._auth
+            ],
+            daemon=True
+        )
+        self._market_status_thread.start()
+
+        # Market feed setups
+        self._order_book: Dict[str, OrderBook] = {}
+        self._market_feed_thread = threading.Thread(
+            target=market_feeder,
+            args=[
+                self._order_book_lock,
+                self.get_products_symbols(),
+                self._order_book,
+                self._auth,
+            ],
+            daemon=True,
+        )
+        self._market_feed_thread.start()
+
+        # Order sender setups
         self._order_sender_queue: queue.Queue[OrderRequest] = queue.Queue()
-        self._order_canceller_queue: queue.Queue[None] = queue.Queue()
         self._order_sender_thread = threading.Thread(
             target=order_sender,
             args=[self._order_sender_queue, self._auth],
             daemon=True,
         )
-        self._order_book: Dict[str, OrderBook] = {}
-        self._market_feed_thread = threading.Thread(
-            target=market_feeder,
-            args=[self._order_book_lock, self.get_products_symbols(), self._order_book, self._auth],
-            daemon=True,
-        )
-        self._market_feed_thread.start()
         self._order_sender_thread.start()
+
+        # Order canceller setups
+        self._order_canceller_queue: queue.Queue[None] = queue.Queue()
 
     def insert_order(self, order: OrderRequest):
         """
@@ -84,14 +111,20 @@ class Exchange:
             ), f"Invalid hitter: {hitter.get_symbol()}, valid products: {self.get_products_symbols()}"
             for product in self._products:
                 if product.symbol == hitter.get_symbol():
-                    hitter.init(self._order_book_lock, product.tickSize, product.startingPrice, product.contractSize)
+                    hitter.init(
+                        self._order_book_lock,
+                        product.tickSize,
+                        product.startingPrice,
+                        product.contractSize,
+                    )
                     break
 
     def trade(self):
         while True:
-            for hitter in self._hitters:
-                if hitter.get_symbol() in self._order_book:                    
-                    orders = hitter.trade(self._order_book[hitter.get_symbol()])
-                    for order in orders:
-                        self._order_sender_queue.put(order)
+            if self._market_status.acceptingOrders:
+                for hitter in self._hitters:
+                    if hitter.get_symbol() in self._order_book:
+                        orders = hitter.trade(self._order_book[hitter.get_symbol()])
+                        for order in orders:
+                            self._order_sender_queue.put(order)
             time.sleep(0.01)

@@ -4,7 +4,7 @@ import requests
 import urllib3
 import logging
 
-from model import OrderCriteria, OrderRequest, OrderList, Side
+from model import OrderCriteria, OrderRequest, OrderList, Side, StatusResponse
 from order_book import OrderBook
 from model import ProductResponseList
 
@@ -66,8 +66,17 @@ def sign_in(username: str, password: str) -> BearerAuth:
     return BearerAuth(bearer_token)
 
 
-def get_status(auth: BearerAuth):
-    pass
+def get_status(auth: BearerAuth) -> Optional[StatusResponse]:
+    PATH = "/status"
+    logger.info(f"Getting status")
+    res = s.get(
+        ENDPOINT + PATH, auth=auth, verify=False
+    )
+    if ensure_success(res, "Getting status failed!"):
+        status = StatusResponse(**res.json())
+        logger.info(f"Getting status success: {status}")
+        return status
+    return None
 
 
 def get_all_products(auth: BearerAuth) -> ProductResponseList:
