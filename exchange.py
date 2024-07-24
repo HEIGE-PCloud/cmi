@@ -116,6 +116,9 @@ class Exchange:
                     )
                     break
 
+    def get_rank(self) -> int:
+        return self._market_status.userRanking
+    
     def trade(self):
         while True:
             if self._market_status.acceptingOrders:

@@ -10,7 +10,7 @@ PASSWORD = "ads100"
 
 def main():
     cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
-    Thread(target=start_ui, daemon=True).start()
+    Thread(target=start_ui, args=(cmi,), daemon=True).start()
     cmi.trade()
 
 
