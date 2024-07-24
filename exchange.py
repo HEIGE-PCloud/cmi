@@ -14,7 +14,6 @@ class Exchange:
         self,
         username: str,
         password: str,
-        hitters: List[Hitter],
         sign_up_for_new_account=True,
     ):
         if sign_up_for_new_account:
@@ -24,8 +23,6 @@ class Exchange:
 
         # Hitters setup
         self.update_products()
-        self._hitters = hitters
-        self.verify_hitters()
 
         # Market status setups
         self._market_status = MarketStatus()
