@@ -12,7 +12,7 @@ def start_ui():
         {"/": ui_root},
         num_procs=1,
         io_loop=IOLoop(),
-        address="0.0.0.0",
+        address="127.0.0.1",
         allow_websocket_origin=["*"],
     )
     server.start()
