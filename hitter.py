@@ -1,7 +1,7 @@
 import threading
 from typing import List
 
-from order import OrderRequest, Side
+from model import OrderRequest, Side
 from order_book import OrderBook
 
 

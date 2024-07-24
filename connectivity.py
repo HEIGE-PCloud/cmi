@@ -5,7 +5,7 @@ import time
 from typing import Dict, List
 
 from api import BearerAuth, get_order_book, send_order
-from order import OrderRequest
+from model import OrderRequest
 from order_book import OrderBook
 
 logger = logging.getLogger(__name__)

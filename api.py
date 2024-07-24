@@ -4,9 +4,9 @@ import requests
 import urllib3
 import logging
 
-from order import OrderCriteria, OrderRequest, OrderList, Side
+from model import OrderCriteria, OrderRequest, OrderList, Side
 from order_book import OrderBook
-from product import ProductResponseList
+from model import ProductResponseList
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,10 @@ def sign_in(username: str, password: str) -> BearerAuth:
     bearer_token = res.headers["Authorization"]
     logger.info(f"Signing in success with bearer token {bearer_token}")
     return BearerAuth(bearer_token)
+
+
+def get_status(auth: BearerAuth):
+    pass
 
 
 def get_all_products(auth: BearerAuth) -> ProductResponseList:

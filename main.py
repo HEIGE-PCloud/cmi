@@ -1,7 +1,7 @@
 import logging
 from exchange import Exchange
 from hitter import Hitter
-from order import OrderRequest, Side
+from model import OrderRequest, Side
 
 USERNAME = "Junrong"
 PASSWORD = "ads100"

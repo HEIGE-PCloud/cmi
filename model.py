@@ -34,3 +34,41 @@ allOrders = OrderCriteria(product=None, price=None, side=None)
 productOrders = lambda product: OrderCriteria(product=product, price=None, side=None)
 
 OrderList = RootModel[List[OrderResponse]]
+
+
+# [
+#     {
+#         "symbol": "75 C",
+#         "tickSize": 0.1,
+#         "startingPrice": 0,
+#         "contractSize": 1
+#     },
+#     {
+#         "symbol": "Sum",
+#         "tickSize": 1,
+#         "startingPrice": 0,
+#         "contractSize": 1
+#     },
+#     {
+#         "symbol": "65 P",
+#         "tickSize": 0.1,
+#         "startingPrice": 0,
+#         "contractSize": 1
+#     },
+#     {
+#         "symbol": "70 Straddle",
+#         "tickSize": 0.25,
+#         "startingPrice": 0,
+#         "contractSize": 1
+#     }
+# ]
+
+
+class ProductResponse(BaseModel):
+    symbol: str
+    tickSize: float
+    startingPrice: float
+    contractSize: float
+
+
+ProductResponseList = RootModel[List[ProductResponse]]

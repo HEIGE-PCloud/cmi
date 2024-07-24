@@ -5,7 +5,7 @@ from typing import Dict, List
 from api import delete_order, get_all_products, sign_in, sign_up
 from connectivity import market_feeder, order_sender
 from hitter import Hitter
-from order import OrderRequest
+from model import OrderRequest
 from order_book import OrderBook
 
 
