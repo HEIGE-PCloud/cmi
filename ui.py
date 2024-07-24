@@ -1,11 +1,20 @@
 from bokeh.server.server import Server
 from tornado.ioloop import IOLoop
 from bokeh.document import Document
+from bokeh.models import Div
+from bokeh.layouts import layout
 
 IP_ADDRESS = "127.0.0.1"
 
-def ui_root(doc: Document):
+
+def periodic_callback():
     pass
+
+
+def ui_root(doc: Document):
+    div = Div(text="Hello world!")
+    doc.add_root(layout([div]))
+    doc.add_periodic_callback(periodic_callback, 1000)
 
 
 def start_ui():
