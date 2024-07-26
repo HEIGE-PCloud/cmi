@@ -1,6 +1,7 @@
 import numpy as np
 import time
-cards = np.array([
+
+all_cards = [
     1.0, 1.0, 1.0, 1.0,
     2.0, 2.0, 2.0, 2.0,
     3.0, 3.0, 3.0, 3.0,
@@ -14,7 +15,20 @@ cards = np.array([
     11.0, 11.0, 11.0, 11.0,
     12.0, 12.0, 12.0, 12.0,
     13.0, 13.0, 13.0, 13.0
-])
+]
+
+chosen_cards = []
+
+total_cards_to_choose = 20
+remaining_cards_to_choose = total_cards_to_choose - len(chosen_cards)
+remaining_cards = all_cards.copy()
+for x in chosen_cards:
+    remaining_cards.remove(x)
+
+cards = np.array(remaining_cards)
+ev = np.mean(cards)
+chosen_cards_sum = sum(chosen_cards)
+theo_price = chosen_cards_sum + ev * remaining_cards_to_choose
 
 
 def call_value(underlying, strike):
@@ -32,7 +46,7 @@ cnt = 100000
 shuffled_cards = np.array([np.random.permutation(cards) for _ in range(cnt)])
 
 # Sum the first 20 elements of each shuffle
-sums = shuffled_cards[:, :20].sum(axis=1)
+sums = shuffled_cards[:, :remaining_cards_to_choose].sum(axis=1) + chosen_cards_sum
 
 # Calculate call and put values
 call_totals = call_value(sums, 150)
@@ -45,6 +59,6 @@ put_price = put_totals.mean()
 
 end_time = time.time()
 print("Time taken:", end_time - start_time, "seconds")
-
-print(call_price)
-print(put_price)
+print("Theo: ", theo_price)
+print("150 Call: ", call_price)
+print("130 Put:", put_price)
