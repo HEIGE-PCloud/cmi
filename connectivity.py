@@ -55,6 +55,6 @@ def market_status(market_status: MarketStatus, auth: BearerAuth):
                 )
             success = True
         if success:
-            time.sleep(10)
+            time.sleep(1)
         else:
             time.sleep(0.01)
