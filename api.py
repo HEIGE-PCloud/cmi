@@ -126,7 +126,7 @@ def delete_order(auth: BearerAuth, id: str):
 def delete_order_by_criteria(auth: BearerAuth, criteria: OrderCriteria):
     PATH = f"/order"
     logger.info(f"Delete order by criteria")
-    res = s.delete(ENDPOINT + PATH, json=criteria.model_dump(), auth=auth, verify=False)
+    res = s.delete(ENDPOINT + PATH, params=criteria.model_dump(), auth=auth, verify=False)
     ensure_success(res, "Delete order by criteria failed!")
 
 def main():

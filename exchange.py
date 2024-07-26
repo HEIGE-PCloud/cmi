@@ -2,9 +2,8 @@ import queue
 import threading
 import time
 from typing import Dict, List
-from api import delete_order, get_all_products, sign_in, sign_up
+from api import delete_order, delete_order_by_criteria, get_all_products, sign_in, sign_up
 from connectivity import market_feeder, market_status, order_sender
-from hitter import Hitter
 from model import MarketStatus, OrderRequest, PositionLimit
 from order_book import OrderBook
 
@@ -80,7 +79,7 @@ class Exchange:
         """
         Delete all outstanding orders on an instrument.
         """
-        pass
+        delete_order_by_criteria(self._auth)
 
     def get_products(self):
         """
@@ -128,3 +127,6 @@ class Exchange:
                         for order in orders:
                             self._order_sender_queue.put(order)
             time.sleep(0.01)
+            
+    def join(self):
+        self._order_sender_thread.join()
