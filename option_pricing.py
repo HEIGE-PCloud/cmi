@@ -13,13 +13,14 @@ def put_payoff(underlying, strike):
     return np.maximum(strike - underlying, 0)
 
 
-def option_pricing(call_strike: float, put_strike: float, cards: Cards):
+def option_pricing(
+    call_strike: float, put_strike: float, cards: Cards, iterations: int = 100000
+):
     remaining_cards = np.array(cards.get_remaining_cards())
-    cnt = 100000
 
     # Generate a matrix of shuffled cards
-    shuffled_cards = np.array(
-        [np.random.permutation(remaining_cards) for _ in range(cnt)]
+    shuffled_cards = np.apply_along_axis(
+        np.random.permutation, 1, np.tile(remaining_cards, (iterations, 1))
     )
 
     # Sum the first 20 elements of each shuffle
@@ -38,7 +39,7 @@ def option_pricing(call_strike: float, put_strike: float, cards: Cards):
     return call_price, put_price
 
 
-def get_call_vol(cards: Cards, strike: float, iterations: int = 30):
+def get_call_vol(cards: Cards, strike: float, call_price: float, iterations: int = 30):
     vol_low = 0.0001
     vol_high = 1.0
     underlying_price = cards.get_theoretical_price()
@@ -59,7 +60,7 @@ def get_call_vol(cards: Cards, strike: float, iterations: int = 30):
     return vol_low
 
 
-def get_put_vol(cards: Cards, strike: float, iterations: int = 30):
+def get_put_vol(cards: Cards, strike: float, put_price: float, iterations: int = 30):
     vol_low = 0.0001
     vol_high = 1.0
     underlying_price = cards.get_theoretical_price()
@@ -73,19 +74,26 @@ def get_put_vol(cards: Cards, strike: float, iterations: int = 30):
             0.0,
             vol_mid,
         )
-        if res > call_price:
+        if res > put_price:
             vol_high = vol_mid
         else:
             vol_low = vol_mid
     return vol_low
 
+
 if __name__ == "__main__":
     start_time = time.time()
+    cards = Cards(20)
 
-    cards = Cards()
+    cards.set_chosen_cards([3, 3, 1, 13, 4, 11, 5, 10, 5, 5, 10, 5, 11, 2, 10, 6, 12])
+
     call_price, put_price = option_pricing(150, 130, cards)
-    call_vol = get_call_vol(cards, 150)
-    put_vol = get_put_vol(cards, 130)
+    call_vol = get_call_vol(cards, 150, call_price)
+    put_vol = get_put_vol(cards, 130, put_price)
+
+    end_time = time.time()
+    print("Time taken:", end_time - start_time, "seconds")
+
     print("Theo: ", cards.get_theoretical_price())
     print("150 Call: ", call_price)
     print(
@@ -134,5 +142,3 @@ if __name__ == "__main__":
             put_vol,
         ),
     )
-    end_time = time.time()
-    print("Time taken:", end_time - start_time, "seconds")
