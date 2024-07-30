@@ -81,13 +81,12 @@ inline double put_payoff(double strike_price, double underlying_price) {
   }
   return 0;
 }
-static constexpr uint64_t totalSimCnt = 500000;
+static constexpr uint64_t totalSimCnt = 300000;
 
 std::pair<double, double> option_pricing(double call_strike, double put_strike,
                                          Cards cards,
                                          uint64_t iterations = 100000) {
   std::vector<double> remaining_cards = cards.get_remaining_cards();
-  std::cout << remaining_cards.size() << "\n";
   std::random_device rd;
   std::mt19937 g(rd());
   double call_price_sum = 0;
@@ -107,40 +106,35 @@ std::pair<double, double> option_pricing(double call_strike, double put_strike,
 }
 
 int main() {
+  constexpr int threadCnt = 10;
+  std::chrono::steady_clock::time_point begin =
+      std::chrono::steady_clock::now();
+
   Cards cards;
-  cards.set_chosen_cards({3, 3, 1, 13, 4, 11, 5, 10, 5, 5, 10, 5, 11, 2, 10, 6, 12});
-  const auto [call_price, put_price] = option_pricing(150, 130, cards);
-  std::cout << "Theo: " << cards.get_theoretical_price() << "\n";
-  std::cout << "150 Call: " << call_price << "\n";
-  std::cout << "130 Put: " << put_price << "\n";
-  //   std::vector<std::future<std::pair<double, double>>> threads;
-  //   double call_price_sum = 0;
-  //   double put_price_sum = 0;
-  //   std::chrono::steady_clock::time_point begin =
-  //       std::chrono::steady_clock::now();
+  std::vector<std::future<std::pair<double, double>>> threads;
+  double call_price_sum = 0;
+  double put_price_sum = 0;
 
-  //   for (int i = 0; i < threadCnt; i++) {
-  //     threads.push_back(std::async(std::launch::async, compute,
-  //     totalSimCnt));
-  //   }
-  //   for (int i = 0; i < threadCnt; i++) {
-  //     threads[i].wait();
-  //     auto ans = threads[i].get();
-  //     call_price_sum += ans.first;
-  //     put_price_sum += ans.second;
-  //   }
+  for (int i = 0; i < threadCnt; i++) {
+    threads.push_back(std::async(std::launch::async, option_pricing, 150, 130,
+                                 cards, totalSimCnt));
+  }
+  for (int i = 0; i < threadCnt; i++) {
+    threads[i].wait();
+    auto ans = threads[i].get();
+    call_price_sum += ans.first;
+    put_price_sum += ans.second;
+  }
 
-  //   double cnt = totalSimCnt;
-  //   std::chrono::steady_clock::time_point end =
-  //   std::chrono::steady_clock::now(); std::cout << "Time difference (sec) = "
-  //             << (std::chrono::duration_cast<std::chrono::microseconds>(end -
-  //                                                                       begin)
-  //                     .count()) /
-  //                    1000000.0
-  //             << std::endl;
-  //   std::cout << "Iterations: " << static_cast<uint64_t>(totalSimCnt *
-  //   threadCnt)
-  //             << std::endl;
-  //   std::cout << "Call: " << (call_price_sum / threadCnt)
-  //             << " Put: " << (put_price_sum / threadCnt) << "\n";
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+  std::cout << "Time difference (sec) = "
+            << (std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                      begin)
+                    .count()) /
+                   1000000.0
+            << std::endl;
+  std::cout << "Iterations: " << static_cast<uint64_t>(totalSimCnt * threadCnt)
+            << std::endl;
+  std::cout << "Call: " << (call_price_sum / threadCnt) << "\n"
+            << " Put: " << (put_price_sum / threadCnt) << "\n";
 }
