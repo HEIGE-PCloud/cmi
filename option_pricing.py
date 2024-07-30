@@ -40,15 +40,12 @@ def option_pricing(
 
 
 def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000):
-    # launch ./option <threads> <iterations> with subproecss and read its stdout
-
     with subprocess.Popen(
         ["./a.out", str(threads), str(iterations)],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         text=True,
     ) as process:
-        # put the 3 into the stdin of the process
         input_data = str(cards.get_chosen_cards_num()) + "\n"
         input_data += " ".join(map(str, cards._chosen_cards)) + "\n"
         output, errors = process.communicate(input=input_data)
@@ -59,6 +56,7 @@ def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000)
         put_delta = float(lines[3])
         return call_price, put_price, call_delta, put_delta
 
+
 def compile_option_pricing_cpp():
     with subprocess.Popen(
         ["g++", "-std=c++20", "-O3", "option_pricing.cpp"],
@@ -68,6 +66,7 @@ def compile_option_pricing_cpp():
     ) as process:
         pass
 
+
 if __name__ == "__main__":
     compile_option_pricing_cpp()
     start_time = time.time()
@@ -75,20 +74,17 @@ if __name__ == "__main__":
 
     cards.set_chosen_cards([])
 
-    # call_price, put_price = option_pricing(150, 130, cards)
-    # call_vol = get_call_vol(cards, 150, call_price)
-    # put_vol = get_put_vol(cards, 130, put_price)
     call_price, put_price, call_delta, put_delta = option_pricing_cpp(cards)
     end_time = time.time()
     call_price_py, put_price_py = option_pricing(150, 130, cards)
     print("Time taken:", end_time - start_time, "seconds")
 
     print("Theo: ", cards.get_theoretical_price())
-    
+
     print("cpp 150 Call: ", call_price)
     print("py  150 Call: ", call_price_py)
     print("cpp 130 Put:", put_price)
-    print("py  130 Put:", put_price)
+    print("py  130 Put:", put_price_py)
 
     print(
         "Call Delta:",
