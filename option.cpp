@@ -101,8 +101,7 @@ inline double put_payoff(double strike_price, double underlying_price) {
 }
 
 std::pair<double, double> option_pricing(double call_strike, double put_strike,
-                                         Cards cards,
-                                         uint64_t iterations = 100000) {
+                                         Cards cards, uint64_t iterations) {
   std::vector<double> remaining_cards = cards.get_remaining_cards();
   std::random_device rd;
   std::mt19937 g(rd());
@@ -123,12 +122,12 @@ std::pair<double, double> option_pricing(double call_strike, double put_strike,
 }
 
 int main(int argc, char* argv[]) {
-  int thread_count = 5;
-  if (argc >= 2) {
-    // read thread count from command line
-    thread_count = std::stoi(argv[1]);
+  if (argc != 3) {
+    throw std::runtime_error("Usage: option <thread_count> <iteration_count>");
   }
-  static constexpr uint64_t total_simulation_iterations = 300000;
+  // read thread count from command line
+  const uint64_t thread_count = std::stoull(argv[1]);
+  const uint64_t total_simulation_iterations = std::stoull(argv[2]);
 
   std::chrono::steady_clock::time_point begin =
       std::chrono::steady_clock::now();
