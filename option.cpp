@@ -54,6 +54,24 @@ class Cards {
            get_chosen_cards_sum();
   }
 
+  [[nodiscard]] double get_largest_remaining_card() const {
+    for (int i = 13; i >= 1; i--) {
+      if (card_counts[i] > 0) {
+        return i;
+      }
+    }
+    throw std::runtime_error("No cards left");
+  }
+
+  [[nodiscard]] double get_smallest_remaining_card() const {
+    for (int i = 1; i <= 13; i++) {
+      if (card_counts[i] > 0) {
+        return i;
+      }
+    }
+    throw std::runtime_error("No cards left");
+  }
+
  private:
   void reset_card_counts() { card_counts.fill(4); }
 
@@ -81,7 +99,6 @@ inline double put_payoff(double strike_price, double underlying_price) {
   }
   return 0;
 }
-static constexpr uint64_t totalSimCnt = 300000;
 
 std::pair<double, double> option_pricing(double call_strike, double put_strike,
                                          Cards cards,
@@ -106,26 +123,57 @@ std::pair<double, double> option_pricing(double call_strike, double put_strike,
 }
 
 int main() {
-  constexpr int threadCnt = 10;
+  static constexpr uint64_t total_simulation_iterations = 300000;
+
+  constexpr int thread_count = 5;
   std::chrono::steady_clock::time_point begin =
       std::chrono::steady_clock::now();
 
   Cards cards;
-  std::vector<std::future<std::pair<double, double>>> threads;
+  Cards cards_delta = cards;
+  if (cards.get_theoretical_price() <= 140) {
+    cards_delta.choose_card(cards.get_largest_remaining_card());
+  } else {
+    cards_delta.choose_card(cards.get_smallest_remaining_card());
+  }
+  std::vector<std::future<std::pair<double, double>>> option_threads;
+  std::vector<std::future<std::pair<double, double>>> delta_threads;
   double call_price_sum = 0;
   double put_price_sum = 0;
+  double delta_call_price_sum = 0;
+  double delta_put_price_sum = 0;
 
-  for (int i = 0; i < threadCnt; i++) {
-    threads.push_back(std::async(std::launch::async, option_pricing, 150, 130,
-                                 cards, totalSimCnt));
+  for (int i = 0; i < thread_count; i++) {
+    option_threads.push_back(std::async(std::launch::async, option_pricing, 150,
+                                        130, cards,
+                                        total_simulation_iterations));
   }
-  for (int i = 0; i < threadCnt; i++) {
-    threads[i].wait();
-    auto ans = threads[i].get();
+  for (int i = 0; i < thread_count; i++) {
+    delta_threads.push_back(std::async(std::launch::async, option_pricing, 150,
+                                       130, cards_delta,
+                                       total_simulation_iterations));
+  }
+  for (int i = 0; i < thread_count; i++) {
+    option_threads[i].wait();
+    auto ans = option_threads[i].get();
     call_price_sum += ans.first;
     put_price_sum += ans.second;
   }
+  for (int i = 0; i < thread_count; i++) {
+    delta_threads[i].wait();
+    auto ans = delta_threads[i].get();
+    delta_call_price_sum += ans.first;
+    delta_put_price_sum += ans.second;
+  }
+  double call_price = call_price_sum / thread_count;
+  double put_price = put_price_sum / thread_count;
+  double delta_call_price = delta_call_price_sum / thread_count;
+  double delta_put_price = delta_put_price_sum / thread_count;
 
+  double delta_underlying_price =
+      cards_delta.get_theoretical_price() - cards.get_theoretical_price();
+  double delta_call = (delta_call_price - call_price) / delta_underlying_price;
+  double delta_put = (delta_put_price - put_price) / delta_underlying_price;
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   std::cout << "Time difference (sec) = "
             << (std::chrono::duration_cast<std::chrono::microseconds>(end -
@@ -133,8 +181,11 @@ int main() {
                     .count()) /
                    1000000.0
             << std::endl;
-  std::cout << "Iterations: " << static_cast<uint64_t>(totalSimCnt * threadCnt)
+  std::cout << "Iterations: "
+            << static_cast<uint64_t>(total_simulation_iterations * thread_count)
             << std::endl;
-  std::cout << "Call: " << (call_price_sum / threadCnt) << "\n"
-            << " Put: " << (put_price_sum / threadCnt) << "\n";
+  std::cout << "Call: " << (call_price) << "\n"
+            << "Put: " << (put_price) << "\n";
+  std::cout << "Call Delta: " << (delta_call) << "\n"
+            << "Put Delta: " << (delta_put) << "\n";
 }
