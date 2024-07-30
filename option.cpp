@@ -122,10 +122,14 @@ std::pair<double, double> option_pricing(double call_strike, double put_strike,
   return {call_price_sum / iterations, put_price_sum / iterations};
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+  int thread_count = 5;
+  if (argc >= 2) {
+    // read thread count from command line
+    thread_count = std::stoi(argv[1]);
+  }
   static constexpr uint64_t total_simulation_iterations = 300000;
 
-  constexpr int thread_count = 5;
   std::chrono::steady_clock::time_point begin =
       std::chrono::steady_clock::now();
 
