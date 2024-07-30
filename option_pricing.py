@@ -59,8 +59,17 @@ def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000)
         put_delta = float(lines[3])
         return call_price, put_price, call_delta, put_delta
 
+def compile_option_pricing_cpp():
+    with subprocess.Popen(
+        ["g++", "-std=c++20", "-O3", "option_pricing.cpp"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    ) as process:
+        pass
 
 if __name__ == "__main__":
+    compile_option_pricing_cpp()
     start_time = time.time()
     cards = Cards(20)
 
