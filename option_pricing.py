@@ -39,7 +39,7 @@ def option_pricing(
     return call_price, put_price
 
 
-def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 500000):
+def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000):
     # launch ./option <threads> <iterations> with subproecss and read its stdout
 
     with subprocess.Popen(
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     start_time = time.time()
     cards = Cards(20)
 
-    cards.set_chosen_cards([3, 3, 1, 13, 4, 11, 5, 10, 5, 5, 10, 5, 11, 2, 10, 6, 12])
+    cards.set_chosen_cards([])
 
     # call_price, put_price = option_pricing(150, 130, cards)
     # call_vol = get_call_vol(cards, 150, call_price)
