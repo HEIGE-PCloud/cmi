@@ -64,6 +64,9 @@ class Cards:
     def choose_card(self, card: float):
         self._chosen_cards.append(card)
 
+    def get_chosen_cards_num(self) -> int:
+        return len(self._chosen_cards)
+
     def set_chosen_cards(self, cards: List[float]):
         self._chosen_cards = cards
 

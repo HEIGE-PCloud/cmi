@@ -1,8 +1,8 @@
 import numpy as np
 import time
-from black_scholes import call_value, call_delta, put_value, put_delta
 from cards import Cards
 import statistics
+import subprocess
 
 
 def call_payoff(underlying, strike):
@@ -39,46 +39,25 @@ def option_pricing(
     return call_price, put_price
 
 
-def get_call_vol(cards: Cards, strike: float, call_price: float, iterations: int = 30):
-    vol_low = 0.0001
-    vol_high = 1.0
-    underlying_price = cards.get_theoretical_price()
-    remaining_cards_to_choose = cards.get_remaining_cards_to_choose()
-    for _ in range(iterations):
-        vol_mid = (vol_low + vol_high) / 2.0
-        res = call_value(
-            underlying_price,
-            strike,
-            remaining_cards_to_choose,
-            0.0,
-            vol_mid,
-        )
-        if res > call_price:
-            vol_high = vol_mid
-        else:
-            vol_low = vol_mid
-    return vol_low
+def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000):
+    # launch ./option <threads> <iterations> with subproecss and read its stdout
 
-
-def get_put_vol(cards: Cards, strike: float, put_price: float, iterations: int = 30):
-    vol_low = 0.0001
-    vol_high = 1.0
-    underlying_price = cards.get_theoretical_price()
-    remaining_cards_to_choose = cards.get_remaining_cards_to_choose()
-    for _ in range(iterations):
-        vol_mid = (vol_low + vol_high) / 2.0
-        res = put_value(
-            underlying_price,
-            strike,
-            remaining_cards_to_choose,
-            0.0,
-            vol_mid,
-        )
-        if res > put_price:
-            vol_high = vol_mid
-        else:
-            vol_low = vol_mid
-    return vol_low
+    with subprocess.Popen(
+        ["./a.out", str(threads), str(iterations)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    ) as process:
+        # put the 3 into the stdin of the process
+        input_data = str(cards.get_chosen_cards_num()) + "\n"
+        input_data += " ".join(map(str, cards._chosen_cards)) + "\n"
+        output, errors = process.communicate(input=input_data)
+        lines = output.split("\n")
+        call_price = float(lines[0])
+        put_price = float(lines[1])
+        call_delta = float(lines[2])
+        put_delta = float(lines[3])
+        return call_price, put_price, call_delta, put_delta
 
 
 if __name__ == "__main__":
@@ -87,58 +66,26 @@ if __name__ == "__main__":
 
     cards.set_chosen_cards([3, 3, 1, 13, 4, 11, 5, 10, 5, 5, 10, 5, 11, 2, 10, 6, 12])
 
-    call_price, put_price = option_pricing(150, 130, cards)
-    call_vol = get_call_vol(cards, 150, call_price)
-    put_vol = get_put_vol(cards, 130, put_price)
-
+    # call_price, put_price = option_pricing(150, 130, cards)
+    # call_vol = get_call_vol(cards, 150, call_price)
+    # put_vol = get_put_vol(cards, 130, put_price)
+    call_price, put_price, call_delta, put_delta = option_pricing_cpp(cards)
     end_time = time.time()
+    call_price_py, put_price_py = option_pricing(150, 130, cards)
     print("Time taken:", end_time - start_time, "seconds")
 
     print("Theo: ", cards.get_theoretical_price())
-    print("150 Call: ", call_price)
-    print(
-        "Estimated 150 Call:",
-        call_value(
-            cards.get_theoretical_price(),
-            150,
-            cards.get_remaining_cards_to_choose(),
-            0,
-            call_vol,
-        ),
-    )
+    
+    print("cpp 150 Call: ", call_price)
+    print("py  150 Call: ", call_price_py)
+    print("cpp 130 Put:", put_price)
+    print("py  130 Put:", put_price)
 
-    print("130 Put:", put_price)
-    print(
-        "Estimated 130 Put:",
-        put_value(
-            cards.get_theoretical_price(),
-            130,
-            cards.get_remaining_cards_to_choose(),
-            0,
-            put_vol,
-        ),
-    )
-
-    print("Call Volatility:", call_vol)
-
-    print("Put Volatility:", put_vol)
     print(
         "Call Delta:",
-        call_delta(
-            cards.get_theoretical_price(),
-            150,
-            cards.get_remaining_cards_to_choose(),
-            0,
-            call_vol,
-        ),
+        call_delta,
     )
     print(
         "Put Delta:",
-        put_delta(
-            cards.get_theoretical_price(),
-            130,
-            cards.get_remaining_cards_to_choose(),
-            0,
-            put_vol,
-        ),
+        put_delta,
     )
