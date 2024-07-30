@@ -39,7 +39,7 @@ def option_pricing(
     return call_price, put_price
 
 
-def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000):
+def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 500000):
     # launch ./option <threads> <iterations> with subproecss and read its stdout
 
     with subprocess.Popen(
