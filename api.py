@@ -33,7 +33,7 @@ def ensure_success(response: requests.Response, message: str, *, fail_hard = Fal
     try:    
         error_message = f"{message}\n{response.json()["message"]}"
     except JSONDecodeError:
-        pass
+        error_message = response.text
 
     if fail_hard:
         raise Exception(error_message)
@@ -44,7 +44,7 @@ def ensure_success(response: requests.Response, message: str, *, fail_hard = Fal
 
 def sign_up(username: str, password: str):
     PATH = "/user"
-    logger.info(f"Signing up with username: {username} password: {password}")
+    logger.debug(f"Signing up with username: {username} password: {password}")
     res = s.post(
         ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
     )
@@ -56,7 +56,7 @@ def sign_up(username: str, password: str):
 
 def sign_in(username: str, password: str) -> BearerAuth:
     PATH = "/user/authenticate"
-    logger.info(f"Signing in with username: {username} password: {password}")
+    logger.debug(f"Signing in with username: {username} password: {password}")
     res = s.post(
         ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
     )
@@ -68,64 +68,64 @@ def sign_in(username: str, password: str) -> BearerAuth:
 
 def get_status(auth: BearerAuth) -> Optional[StatusResponse]:
     PATH = "/status"
-    logger.info(f"Getting status")
+    logger.debug(f"Getting status")
     res = s.get(
         ENDPOINT + PATH, auth=auth, verify=False
     )
     if ensure_success(res, "Getting status failed!"):
         status = StatusResponse(**res.json())
-        logger.info(f"Getting status success: {status}")
+        logger.debug(f"Getting status success: {status}")
         return status
     return None
 
 
 def get_all_products(auth: BearerAuth) -> ProductResponseList:
     PATH = "/product"
-    logger.info(f"Getting products")
+    logger.debug(f"Getting products")
     res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
     ensure_success(res, "Get product failed!", fail_hard=True)
     product_list = ProductResponseList(res.json())
-    logger.info(f"Getting product list success: {product_list}")
+    logger.debug(f"Getting product list success: {product_list}")
     return product_list
 
 
 def get_order_book(auth: BearerAuth, product_name: str) -> Optional[OrderBook]:
     PATH = f"/product/{product_name}/order-book/current-user"
-    logger.info(f"Getting the order book for product: {product_name}")
+    logger.debug(f"Getting the order book for product: {product_name}")
     res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Get order book failed!"):
         order_book = OrderBook(**res.json())
-        logger.info(f"Getting order book success: {order_book}")
+        logger.debug(f"Getting order book success: {order_book}")
         return order_book
     return None
 
 def send_order(auth: BearerAuth, order: OrderRequest):
     PATH = "/order"
-    logger.info(f"Sending new order: {order}")
+    logger.debug(f"Sending new order: {order}")
     res = s.post(ENDPOINT + PATH, json=order.model_dump(), auth=auth, verify=False)
     if ensure_success(res, "Failed to send new order"):
-        logger.info("Sending new order success") 
+        logger.debug("Sending new order success") 
 
 def get_current_orders(auth: BearerAuth) -> Optional[OrderList]:
     PATH = "/order/current-user"
-    logger.info("Getting current orders")
+    logger.debug("Getting current orders")
     res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Get current orders failed!"):        
         order_list = OrderList(res.json())
-        logger.info(f"Getting current orders success: {order_list}")
+        logger.debug(f"Getting current orders success: {order_list}")
         return order_list
     return None
 
 def delete_order(auth: BearerAuth, id: str):
     PATH = f"/order/{id}"
-    logger.info(f"Deleting order {id}")
+    logger.debug(f"Deleting order {id}")
     res = s.delete(ENDPOINT + PATH, auth=auth, verify=False)
     if ensure_success(res, "Delete order failed!"):
-        logger.info("Deleting order success")
+        logger.debug("Deleting order success")
         
 def delete_order_by_criteria(auth: BearerAuth, criteria: OrderCriteria):
     PATH = f"/order"
-    logger.info(f"Delete order by criteria")
+    logger.debug(f"Delete order by criteria")
     res = s.delete(ENDPOINT + PATH, params=criteria.model_dump(), auth=auth, verify=False)
     ensure_success(res, "Delete order by criteria failed!")
 
@@ -140,5 +140,5 @@ def main():
     delete_order_by_criteria(auth, OrderCriteria(product=None, price=None, side=None))
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     main()
