@@ -65,7 +65,7 @@ def start_ui(exchange: Exchange):
     )
     server.start()
     print(f"Starting turbot ui on http://{IP_ADDRESS}:5006/")
-    server.io_loop.add_callback(server.show, "/")
+    # server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
 
 
