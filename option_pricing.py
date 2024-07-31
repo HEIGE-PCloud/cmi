@@ -48,7 +48,9 @@ def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000)
     ) as process:
         input_data = str(cards.get_chosen_cards_num()) + "\n"
         input_data += " ".join(map(str, cards._chosen_cards)) + "\n"
+        print(input_data)
         output, errors = process.communicate(input=input_data)
+        print(output)
         lines = output.split("\n")
         call_price = float(lines[0])
         put_price = float(lines[1])

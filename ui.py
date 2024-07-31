@@ -2,7 +2,14 @@ import datetime
 from bokeh.server.server import Server
 from tornado.ioloop import IOLoop
 from bokeh.document import Document
-from bokeh.models import ColumnDataSource, RadioButtonGroup, Div, Button
+from bokeh.models import (
+    ColumnDataSource,
+    RadioButtonGroup,
+    Div,
+    Button,
+    DataTable,
+    TableColumn,
+)
 from bokeh.layouts import layout, column, row
 from bokeh.plotting import figure
 import numpy as np
@@ -38,20 +45,27 @@ class CardsUI:
             "K",
         ]
 
-    def render_cards_radio_button_group(self, index: int):
+    def render_cards_radio_button_group(self, index: int, active: int):
         def radio_botton_group_on_change(attr: str, old_active: int, new_active: int):
             self.trade_config.update_cards()
 
-        radio_button_group = RadioButtonGroup(labels=self.cards_labels, active=0)
+        radio_button_group = RadioButtonGroup(labels=self.cards_labels, active=active)
         radio_button_group.on_change("active", radio_botton_group_on_change)
 
         div = Div(text=f"Card {index:02}")
         return layout([[div, radio_button_group]])
 
     def render(self):
-        self.cards_radio_button_groups = [
-            self.render_cards_radio_button_group(i) for i in range(1, 21)
-        ]
+        self.trade_config.cards._chosen_cards
+        self.cards_radio_button_groups = []
+        num = self.trade_config.cards.get_chosen_cards_num()
+        for i in range(0, 20):
+            active = 0
+            if i < num:
+                active = self.trade_config.cards._chosen_cards[i]
+            self.cards_radio_button_groups.append(
+                self.render_cards_radio_button_group(i + 1, active)
+            )
 
         def reset_all_button_handler():
             for radio_button_group in self.cards_radio_button_groups:
@@ -71,26 +85,41 @@ class CardsUI:
 
 
 class TheoUI:
-    def __init__(self, trade_config: TradeConfig):
-        self.trade_config = trade_config
-        self.source = ColumnDataSource(data=dict(time=[], theo=[]))
-        self.figure = figure(
-            title="Theoretical Price",
-            x_axis_label="Time",
-            y_axis_label="Price",
-            x_axis_type="datetime",
+    def __init__(self, config: TradeConfig):
+        self.config = config
+        self.field_name = [
+            "Future theo",
+            "150 Call theo",
+            "130 Put theo",
+            "150 Call delta",
+            "130 Put delta",
+        ]
+        self.source = ColumnDataSource(
+            data=dict(field_name=self.field_name, value=[None, None, None, None, None])
         )
-        self.figure.line("time", "theo", source=self.source, line_width=2)
+        columns = [
+            TableColumn(field="field_name", title="Field Name"),
+            TableColumn(field="value", title="Value"),
+        ]
+        self.data_table = DataTable(
+            source=self.source, columns=columns, index_position=None, header_row=False
+        )
 
     def render(self):
-        return self.figure
+        return self.data_table
 
     def update(self):
         new_data = dict(
-            time=[datetime.datetime.now()],
-            theo=[self.trade_config.cards.get_theoretical_price()],
+            field_name=self.field_name,
+            value=[
+                self.config.future_theo,
+                self.config.call_theo,
+                self.config.put_theo,
+                self.config.call_delta,
+                self.config.put_delta,
+            ],
         )
-        self.source.stream(new_data, rollover=60)
+        self.source.data = new_data
 
 
 class MainUI:
@@ -110,7 +139,7 @@ class MainUI:
             for update_function in update_functions:
                 update_function()
 
-        doc.add_periodic_callback(periodic_callbacks, 1000)
+        doc.add_periodic_callback(periodic_callbacks, 500)
 
 
 def start_ui(exchange: Exchange, trade_config: TradeConfig):
