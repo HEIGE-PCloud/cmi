@@ -3,7 +3,7 @@ from bokeh.server.server import Server
 from tornado.ioloop import IOLoop
 from bokeh.document import Document
 from bokeh.models import ColumnDataSource, RadioButtonGroup, Div, Button
-from bokeh.layouts import layout
+from bokeh.layouts import layout, column, row
 from bokeh.plotting import figure
 import numpy as np
 
@@ -41,7 +41,6 @@ class CardsUI:
     def render_cards_radio_button_group(self, index: int):
         def radio_botton_group_on_change(attr: str, old_active: int, new_active: int):
             self.trade_config.update_cards()
-            print(self.trade_config.cards.get_theoretical_price())
 
         radio_button_group = RadioButtonGroup(labels=self.cards_labels, active=0)
         radio_button_group.on_change("active", radio_botton_group_on_change)
@@ -71,6 +70,29 @@ class CardsUI:
         return res
 
 
+class TheoUI:
+    def __init__(self, trade_config: TradeConfig):
+        self.trade_config = trade_config
+        self.source = ColumnDataSource(data=dict(time=[], theo=[]))
+        self.figure = figure(
+            title="Theoretical Price",
+            x_axis_label="Time",
+            y_axis_label="Price",
+            x_axis_type="datetime",
+        )
+        self.figure.line("time", "theo", source=self.source, line_width=2)
+
+    def render(self):
+        return self.figure
+
+    def update(self):
+        new_data = dict(
+            time=[datetime.datetime.now()],
+            theo=[self.trade_config.cards.get_theoretical_price()],
+        )
+        self.source.stream(new_data, rollover=60)
+
+
 class MainUI:
     def __init__(self, exchange: Exchange, config: TradeConfig):
         self.exchange = exchange
@@ -78,17 +100,11 @@ class MainUI:
 
     def ui_root(self, doc: Document):
         update_functions = []
-        c = CardsUI(self.config)
-        source = ColumnDataSource(data=dict(x=[], y=[]))
-        p = figure(title="Random Data Plot", x_axis_label="x", y_axis_label="y")
-        p.line("x", "y", source=source, line_width=2)
-        doc.add_root(layout([p, c.render()]))
+        cardsUI = CardsUI(self.config)
+        theoUI = TheoUI(self.config)
+        update_functions.append(theoUI.update)
 
-        def update():
-            new_data = dict(x=[np.random.random()], y=[np.random.random()])
-            source.stream(new_data, rollover=100)
-
-        update_functions.append(update)
+        doc.add_root(row(cardsUI.render(), theoUI.render()))
 
         def periodic_callbacks():
             for update_function in update_functions:
