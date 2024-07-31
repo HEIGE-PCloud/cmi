@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <future>
 #include <iostream>
 #include <numeric>
@@ -13,14 +12,14 @@ class Cards {
   void choose_card(double card) {
     assert(card_counts[card] > 0);
     chosen_cards.push_back(card);
-    card_counts[card]--;
+    card_counts[static_cast<std::size_t>(card)]--;
   }
 
-  void set_chosen_cards(const std::vector<double>& cards) {
+  [[maybe_unused]] void set_chosen_cards(const std::vector<double>& cards) {
     chosen_cards = cards;
     reset_card_counts();
     for (const auto& card : cards) {
-      card_counts[static_cast<int>(card)]--;
+      card_counts[static_cast<std::size_t>(card)]--;
     }
   }
 
@@ -46,7 +45,7 @@ class Cards {
   [[nodiscard]] double get_expected_value() const {
     const auto cards = get_remaining_cards();
     return std::accumulate(std::begin(cards), std::end(cards), 0.0) /
-           cards.size();
+           static_cast<double>(cards.size());
   }
 
   [[nodiscard]] double get_theoretical_price() const {
@@ -83,7 +82,7 @@ class Cards {
       12.0, 12.0, 12.0, 12.0, 13.0, 13.0, 13.0, 13.0};
   std::vector<double> chosen_cards{};
   std::array<uint8_t, 14> card_counts{};
-  uint8_t total_cards_to_choose = 20;
+  const int total_cards_to_choose = 20;
 };
 
 inline double call_payoff(double strike_price, double underlying_price) {
@@ -101,7 +100,8 @@ inline double put_payoff(double strike_price, double underlying_price) {
 }
 
 std::pair<double, double> option_pricing(double call_strike, double put_strike,
-                                         Cards cards, uint64_t iterations) {
+                                         const Cards& cards,
+                                         uint64_t iterations) {
   std::vector<double> remaining_cards = cards.get_remaining_cards();
   std::random_device rd;
   std::mt19937 g(rd());
@@ -110,15 +110,16 @@ std::pair<double, double> option_pricing(double call_strike, double put_strike,
   for (uint64_t c = 1; c <= iterations; c++) {
     std::shuffle(std::begin(remaining_cards), std::end(remaining_cards), g);
     double underlying_price =
-        cards.get_chosen_cards_sum() +
+        static_cast<double>(cards.get_chosen_cards_sum()) +
         std::accumulate(
             std::begin(remaining_cards),
             std::begin(remaining_cards) + cards.get_remaining_cards_to_choose(),
-            0);
+            0.0);
     call_price_sum += call_payoff(call_strike, underlying_price);
     put_price_sum += put_payoff(put_strike, underlying_price);
   }
-  return {call_price_sum / iterations, put_price_sum / iterations};
+  return {call_price_sum / static_cast<double>(iterations),
+          put_price_sum / static_cast<double>(iterations)};
 }
 
 int main(int argc, char* argv[]) {
@@ -128,7 +129,7 @@ int main(int argc, char* argv[]) {
   std::ios::sync_with_stdio(false);
 
   // read thread count from command line
-  const uint64_t thread_count = std::stoull(argv[1]);
+  const int thread_count = std::stoi(argv[1]);
   const uint64_t total_simulation_iterations = std::stoull(argv[2]);
 
   Cards cards;
@@ -160,12 +161,14 @@ int main(int argc, char* argv[]) {
   double delta_call_price_sum = 0;
   double delta_put_price_sum = 0;
 
+  option_threads.reserve(thread_count);
   for (int i = 0; i < thread_count; i++) {
     option_threads.push_back(std::async(std::launch::async, option_pricing, 150,
                                         130, cards,
                                         total_simulation_iterations));
   }
   if (compute_delta) {
+    delta_threads.reserve(thread_count);
     for (int i = 0; i < thread_count; i++) {
       delta_threads.push_back(std::async(std::launch::async, option_pricing,
                                          150, 130, cards_delta,
