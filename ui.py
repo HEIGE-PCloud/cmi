@@ -2,8 +2,8 @@ import datetime
 from bokeh.server.server import Server
 from tornado.ioloop import IOLoop
 from bokeh.document import Document
-from bokeh.models import Div
-from bokeh.layouts import layout
+from bokeh.models import Div, RadioButtonGroup, Button
+from bokeh.layouts import layout, row
 from typing import Callable, List
 
 from exchange import Exchange
@@ -17,12 +17,39 @@ def periodic_callback():
     for func in callback_functions:
         func()
 
+def render_cards_radio_button_group(index: int):
+    cards_labels = ["Unknown", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
+    def radio_botton_group_on_change(attr: str, old_active: int, new_active: int):
+        print(new_active)
+
+    radio_button_group = RadioButtonGroup(labels=cards_labels, active=0)
+    radio_button_group.on_change('active', radio_botton_group_on_change)
+    
+    div = Div(text=f"Card {index}")
+    return layout([[div, radio_button_group]])
+
+def render_cards_selection():
+    cards_radio_button_groups = [render_cards_radio_button_group(i) for i in range(1, 21)]
+    
+    def reset_all_button_handler():
+        for radio_button_group in cards_radio_button_groups:
+            radio_button_group.children[0].children[1].active = 0
+
+    reset_all_button = Button(label="Reset all", button_type="danger")
+    reset_all_button.on_event("button_click", reset_all_button_handler)
+
+    # cards_radio_button_groups.append(reset_all_button)
+
+    return layout([cards_radio_button_groups], reset_all_button)
+        
 
 def ui_root(doc: Document):
     global cmi
     div = Div(text=f"Current rank: {cmi.get_rank()} {datetime.datetime.now()}")
-    doc.add_root(layout([div]))
+    cards_selection = render_cards_selection()
+    
+    doc.add_root(layout([div, cards_selection]))
     doc.add_periodic_callback(periodic_callback, 1000)
 
 
