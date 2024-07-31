@@ -98,6 +98,12 @@ def ui_root(doc: Document):
     doc.add_periodic_callback(periodic_callback, 500)
 
 
+class UI():
+    
+    def __init__(self, exchange: Exchange, trade_config: TradeConfig) -> None:
+        self.exchange = exchange
+        self.trade_config = trade_config
+
 def start_ui(exchange: Exchange, tc: TradeConfig):
     global cmi
     cmi = exchange
