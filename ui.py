@@ -8,7 +8,7 @@ from typing import Callable, List
 
 from exchange import Exchange
 
-IP_ADDRESS = "127.0.0.1"
+IP_ADDRESS = "0.0.0.0"
 
 
 callback_functions: List[Callable] = []
