@@ -10,11 +10,11 @@ PASSWORD = "test1"
 
 def main():
     cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
-    # Thread(target=start_ui, args=(cmi,), daemon=True).start()
-    # cmi.trade()
-    # cmi.insert_order(OrderRequest(side=Side.BUY, price=1, volume=10, product="FUTURE"))
+    Thread(target=start_ui, args=(cmi,), daemon=True).start()
+    cmi.trade()
+    cmi.insert_order(OrderRequest(side=Side.BUY, price=1, volume=10, product="FUTURE"))
     cmi.delete_all_orders()
-    # cmi.join()
+    cmi.join()
 
 
 if __name__ == "__main__":
