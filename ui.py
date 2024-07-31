@@ -26,7 +26,7 @@ def render_cards_radio_button_group(index: int):
     radio_button_group = RadioButtonGroup(labels=cards_labels, active=0)
     radio_button_group.on_change('active', radio_botton_group_on_change)
     
-    div = Div(text=f"Card {index}")
+    div = Div(text=f"Card {index:02}")
     return layout([[div, radio_button_group]])
 
 def render_cards_selection():
