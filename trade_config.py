@@ -16,8 +16,8 @@ class TradeConfig():
         self.put_theo = None
         self.call_delta = None
         self.put_delta = None
-        self.threads = 4
-        self.iterations = 300000
+        self.threads = 10
+        self.iterations = 500000
         self.update_theo()        
 
     def update_cards(self):

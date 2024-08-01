@@ -19,7 +19,7 @@ from typing import Callable, List, Optional
 from exchange import Exchange
 from trade_config import TradeConfig
 
-IP_ADDRESS = "127.0.0.1"
+IP_ADDRESS = "0.0.0.0"
 
 
 class CardsUI:
