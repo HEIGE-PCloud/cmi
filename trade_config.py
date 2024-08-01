@@ -1,3 +1,4 @@
+from typing import List
 from cards import Cards
 from option_pricing import compile_option_pricing_cpp, option_pricing_cpp
 import threading
@@ -19,6 +20,8 @@ class TradeConfig():
         self.threads = 10
         self.iterations = 500000
         self.update_theo()        
+    def with_strategies(self, strategies):
+        self.strategies = strategies
 
     def update_cards(self):
         self.reset_theo()

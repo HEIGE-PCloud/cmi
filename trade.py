@@ -1,5 +1,9 @@
 
 
-def trade():
+from trade_config import TradeConfig
+
+
+def trade(config: TradeConfig):
     while True:
-        pass
+        for strategy in config.strategies:
+            strategy.make_market()
