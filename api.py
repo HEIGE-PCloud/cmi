@@ -23,7 +23,7 @@ class BearerAuth(requests.auth.AuthBase):
         return req
 
 
-ENDPOINT = "https://cmi-exchange/api"
+ENDPOINT = "https://staging-cmi-exchange/api"
 
 
 def ensure_success(response: requests.Response, message: str, *, fail_hard = False):

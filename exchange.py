@@ -3,8 +3,8 @@ import threading
 import time
 from typing import Dict, List
 from api import delete_order, delete_order_by_criteria, get_all_products, sign_in, sign_up
-from connectivity import market_feeder, market_status, order_sender
-from model import MarketStatus, OrderRequest, PositionLimit
+from connectivity import ConnectivityRequest, ConnectivityRequestType, market_feeder, market_status, connectivity
+from model import MarketStatus, OrderCriteria, OrderRequest, PositionLimit, Side
 from order_book import OrderBook
 
 
@@ -52,13 +52,13 @@ class Exchange:
         self._market_feed_thread.start()
 
         # Order sender setups
-        self._order_sender_queue: queue.Queue[OrderRequest] = queue.Queue()
-        self._order_sender_thread = threading.Thread(
-            target=order_sender,
-            args=[self._order_sender_queue, self._auth],
+        self._connectivity_queue: queue.Queue[ConnectivityRequest] = queue.Queue()
+        self._connectivity_thread = threading.Thread(
+            target=connectivity,
+            args=[self._connectivity_queue, self._auth],
             daemon=True,
         )
-        self._order_sender_thread.start()
+        self._connectivity_thread.start()
 
         # Order canceller setups
         self._order_canceller_queue: queue.Queue[None] = queue.Queue()
@@ -67,19 +67,25 @@ class Exchange:
         """
         Insert a limit order on an instrument.
         """
-        self._order_sender_queue.put(order)
+        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.NEW_ORDER, data=order))
 
     def delete_order(self, id: str):
         """
         Delete a specific outstanding limit order on an instrument.
         """
-        delete_order(self._auth, id)
+        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER, data=id))
 
     def delete_all_orders(self):
         """
         Delete all outstanding orders on an instrument.
         """
-        delete_order_by_criteria(self._auth)
+        for product in self._products:
+            product.symbol
+            self.delete_all_orders_for_symbol(product.symbol)
+
+    def delete_all_orders_for_symbol(self, symbol: str):
+        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA, data=OrderCriteria(product=symbol, side=Side.BUY, price=None)))
+        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA, data=OrderCriteria(product=symbol, side=Side.SELL, price=None)))
 
     def get_products(self):
         """
@@ -117,16 +123,11 @@ class Exchange:
 
     def get_rank(self) -> int:
         return self._market_status.userRanking
-    
-    def trade(self):
-        while True:
-            if self._market_status.acceptingOrders:
-                for hitter in self._hitters:
-                    if hitter.get_symbol() in self._order_book:
-                        orders = hitter.trade(self._order_book[hitter.get_symbol()])
-                        for order in orders:
-                            self._order_sender_queue.put(order)
-            time.sleep(0.01)
-            
+                
     def join(self):
-        self._order_sender_thread.join()
+        self._connectivity_thread.join()
+
+if __name__ == '__main__':
+    USERNAME = "test2"
+    PASSWORD = "test2"
+    cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)

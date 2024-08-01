@@ -1,21 +1,39 @@
+from enum import Enum
 import logging
 import queue
 import threading
 import time
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from api import BearerAuth, get_order_book, get_status, send_order
+from api import BearerAuth, delete_order, delete_order_by_criteria, get_order_book, get_status, send_order
 from model import MarketStatus, OrderRequest
 from order_book import OrderBook
 
 logger = logging.getLogger(__name__)
 
+class ConnectivityRequestType(Enum):
+    NEW_ORDER = 0
+    CANCEL_ORDER = 1
+    CANCEL_ORDER_BY_CRITERIA = 2
 
-def order_sender(queue: queue.Queue[OrderRequest], auth: BearerAuth):
+class ConnectivityRequest:
+    
+    def __init__(self, type: ConnectivityRequestType, data) -> None:
+        self.type = type
+        self.data = data
+
+
+def connectivity(queue: queue.Queue[ConnectivityRequest], auth: BearerAuth):
     while True:
-        order = queue.get()
-        logger.info(f"Sending order {order}")
-        send_order(auth, order)
+        request = queue.get()
+        if  request.type == ConnectivityRequestType.NEW_ORDER:
+            logger.info(f"Sending order {request.data}")
+            send_order(auth, request.data)
+        elif request.type == ConnectivityRequestType.CANCEL_ORDER:
+            logger.info(f"Cancelling order {request.data}")
+            delete_order(auth, request.data)
+        elif request.type == ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA:
+            delete_order_by_criteria(auth, request.data)
         queue.task_done()
 
 
