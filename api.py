@@ -14,6 +14,7 @@ urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
 s = requests.Session()
 
+
 class BearerAuth(requests.auth.AuthBase):
     def __init__(self, token: str):
         self.token = token
@@ -26,11 +27,10 @@ class BearerAuth(requests.auth.AuthBase):
 ENDPOINT = "https://staging-cmi-exchange/api"
 
 
-def ensure_success(response: requests.Response, message: str, *, fail_hard = False):
+def ensure_success(response: requests.Response, message: str, *, fail_hard=False):
     if response.ok:
         return True
-    error_message = message
-    try:    
+    try:
         error_message = f"{message}\n{response.json()["message"]}"
     except JSONDecodeError:
         error_message = response.text
@@ -43,10 +43,10 @@ def ensure_success(response: requests.Response, message: str, *, fail_hard = Fal
 
 
 def sign_up(username: str, password: str):
-    PATH = "/user"
+    path = "/user"
     logger.debug(f"Signing up with username: {username} password: {password}")
     res = s.post(
-        ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
+        ENDPOINT + path, json={"username": username, "password": password}, verify=False
     )
     ensure_success(res, "Sign up failed!", fail_hard=True)
     json = res.json()
@@ -55,10 +55,10 @@ def sign_up(username: str, password: str):
 
 
 def sign_in(username: str, password: str) -> BearerAuth:
-    PATH = "/user/authenticate"
+    path = "/user/authenticate"
     logger.debug(f"Signing in with username: {username} password: {password}")
     res = s.post(
-        ENDPOINT + PATH, json={"username": username, "password": password}, verify=False
+        ENDPOINT + path, json={"username": username, "password": password}, verify=False
     )
     ensure_success(res, "Sign in failed!", fail_hard=True)
     bearer_token = res.headers["Authorization"]
@@ -67,10 +67,10 @@ def sign_in(username: str, password: str) -> BearerAuth:
 
 
 def get_status(auth: BearerAuth) -> Optional[StatusResponse]:
-    PATH = "/status"
+    path = "/status"
     logger.debug(f"Getting status")
     res = s.get(
-        ENDPOINT + PATH, auth=auth, verify=False
+        ENDPOINT + path, auth=auth, verify=False
     )
     if ensure_success(res, "Getting status failed!"):
         status = StatusResponse(**res.json())
@@ -80,9 +80,9 @@ def get_status(auth: BearerAuth) -> Optional[StatusResponse]:
 
 
 def get_all_products(auth: BearerAuth) -> ProductResponseList:
-    PATH = "/product"
+    path = "/product"
     logger.debug(f"Getting products")
-    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + path, auth=auth, verify=False)
     ensure_success(res, "Get product failed!", fail_hard=True)
     product_list = ProductResponseList(res.json())
     logger.debug(f"Getting product list success: {product_list}")
@@ -90,67 +90,74 @@ def get_all_products(auth: BearerAuth) -> ProductResponseList:
 
 
 def get_order_book(auth: BearerAuth, product_name: str) -> Optional[OrderBook]:
-    PATH = f"/product/{product_name}/order-book/current-user"
+    path = f"/product/{product_name}/order-book/current-user"
     logger.debug(f"Getting the order book for product: {product_name}")
-    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + path, auth=auth, verify=False)
     if ensure_success(res, "Get order book failed!"):
         order_book = OrderBook(**res.json())
         logger.debug(f"Getting order book success: {order_book}")
         return order_book
     return None
 
+
 def send_order(auth: BearerAuth, order: OrderRequest):
-    PATH = "/order"
+    path = "/order"
     logger.debug(f"Sending new order: {order}")
-    res = s.post(ENDPOINT + PATH, json=order.model_dump(), auth=auth, verify=False)
+    res = s.post(ENDPOINT + path, json=order.model_dump(), auth=auth, verify=False)
     if ensure_success(res, "Failed to send new order"):
-        logger.debug("Sending new order success") 
+        logger.debug("Sending new order success")
+
 
 def get_current_orders(auth: BearerAuth) -> Optional[OrderList]:
-    PATH = "/order/current-user"
+    path = "/order/current-user"
     logger.debug("Getting current orders")
-    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
-    if ensure_success(res, "Get current orders failed!"):        
+    res = s.get(ENDPOINT + path, auth=auth, verify=False)
+    if ensure_success(res, "Get current orders failed!"):
         order_list = OrderList(res.json())
         logger.debug(f"Getting current orders success: {order_list}")
         return order_list
     return None
 
-def delete_order(auth: BearerAuth, id: str):
-    PATH = f"/order/{id}"
-    logger.debug(f"Deleting order {id}")
-    res = s.delete(ENDPOINT + PATH, auth=auth, verify=False)
+
+def delete_order(auth: BearerAuth, order_id: str):
+    path = f"/order/{order_id}"
+    logger.debug(f"Deleting order {order_id}")
+    res = s.delete(ENDPOINT + path, auth=auth, verify=False)
     if ensure_success(res, "Delete order failed!"):
         logger.debug("Deleting order success")
-        
+
+
 def delete_order_by_criteria(auth: BearerAuth, criteria: OrderCriteria):
-    PATH = f"/order"
+    path = f"/order"
     logger.debug(f"Delete order by criteria")
-    res = s.delete(ENDPOINT + PATH, params=criteria.model_dump(), auth=auth, verify=False)
+    res = s.delete(ENDPOINT + path, params=criteria.model_dump(), auth=auth, verify=False)
     ensure_success(res, "Delete order by criteria failed!")
 
+
 def get_position(auth: BearerAuth):
-    PATH = "/position/current-user"
+    path = "/position/current-user"
     logger.debug("Getting position")
-    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + path, auth=auth, verify=False)
     if ensure_success(res, "Get position failed!"):
         positions = PositionResponseList(res.json())
         logger.debug(f"Getting position success: {positions}")
         return positions
     return None
 
+
 def get_news(auth: BearerAuth):
-    PATH = "/news"
+    path = "/news"
     logger.debug("Getting news")
-    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
+    res = s.get(ENDPOINT + path, auth=auth, verify=False)
     if ensure_success(res, "Get news failed!"):
         news = NewsResponseList(res.json())
         logger.debug(f"Getting news success: {news}")
         return news
     return None
 
+
 def main():
-    auth = sign_in("Junrong", "ads100")
+    auth = sign_in("test", "test")
     product_list = get_all_products(auth)
     product0 = product_list.root[0]
     get_order_book(auth, product0.symbol)
@@ -158,6 +165,7 @@ def main():
     get_current_orders(auth)
     delete_order(auth, "1")
     delete_order_by_criteria(auth, OrderCriteria(product=None, price=None, side=None))
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
