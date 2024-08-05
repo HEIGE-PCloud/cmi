@@ -1,10 +1,9 @@
 import queue
 import threading
-import time
 from typing import Dict, List
-from api import delete_order, delete_order_by_criteria, get_all_products, sign_in, sign_up
+from api import  get_all_products, sign_in, sign_up
 from connectivity import ConnectivityRequest, ConnectivityRequestType, market_feeder, market_status, connectivity
-from model import MarketStatus, OrderCriteria, OrderRequest, PositionLimit, Side
+from model import MarketStatus, OrderCriteria, OrderRequest, PositionLimit, ProductResponse, Side
 from order_book import OrderBook
 
 
@@ -19,13 +18,14 @@ class Exchange:
             sign_up(username, password)
         self._auth = sign_in(username, password)
         self._order_book_lock = threading.Lock()
+        self.products: Dict[str, ProductResponse] = {}
 
         # Hitters setup
         self.update_products()
 
         # Market status setups
         self._market_status = MarketStatus()
-        for product in self._products:
+        for product in list(self.products.values()):
             self._market_status.positionLimits[product.symbol] = PositionLimit(shortLimit=0, longLimit=0)
         self._market_status_thread = threading.Thread(
             target=market_status,
@@ -43,7 +43,7 @@ class Exchange:
             target=market_feeder,
             args=[
                 self._order_book_lock,
-                self.get_products_symbols(),
+                list(self.products.keys()),
                 self._order_book,
                 self._auth,
             ],
@@ -87,39 +87,19 @@ class Exchange:
         self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA, data=OrderCriteria(product=symbol, side=Side.BUY, price=None)))
         self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA, data=OrderCriteria(product=symbol, side=Side.SELL, price=None)))
 
-    def get_products(self):
+    def get_product(self, product: str):
         """
         Return all products on the exchange.
         """
-        return self._products
-
-    def get_products_symbols(self) -> List[str]:
-        """
-        Return a list of product symbol names
-        """
-        return [product.symbol for product in self._products]
+        return self.products[product]
 
     def update_products(self):
         """
         Update all products on the exchange.
         """
-        self._products = get_all_products(self._auth).root
-
-    def verify_hitters(self):
-        symbols = self.get_products_symbols()
-        for hitter in self._hitters:
-            assert (
-                hitter.get_symbol() in symbols
-            ), f"Invalid hitter: {hitter.get_symbol()}, valid products: {self.get_products_symbols()}"
-            for product in self._products:
-                if product.symbol == hitter.get_symbol():
-                    hitter.init(
-                        self._order_book_lock,
-                        product.tickSize,
-                        product.startingPrice,
-                        product.contractSize,
-                    )
-                    break
+        products = get_all_products(self._auth).root
+        for product in products:
+            self.products[product.symbol] = product
 
     def get_rank(self) -> int:
         return self._market_status.userRanking

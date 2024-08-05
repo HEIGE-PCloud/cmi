@@ -18,7 +18,7 @@ def main():
     future = Future(trade_config, cmi, 'FUTURE')
     trade_config.with_strategies([future])
     Thread(target=start_ui, args=(cmi,trade_config), daemon=True).start()
-    trade()
+    trade(trade_config)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

@@ -11,8 +11,9 @@ class Strategy:
         self.symbol = symbol
         self.bid_price = None
         self.ask_price = None
-        self.tick_size = 1  # TODO: read this from product info
+        self.tick_size = exchange.products[symbol].tickSize  # TODO: read this from product info
         self.credit = 1  # TODO: set up this properly
+        print(self.tick_size)
 
 class Future(Strategy):
     def __init__(self, config: TradeConfig, exchange: Exchange, symbol: str) -> None:
