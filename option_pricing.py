@@ -57,6 +57,24 @@ def option_pricing_cpp(cards: Cards, threads: int = 4, iterations: int = 300000)
         return call_price, put_price, call_delta, put_delta
 
 
+def option_pricing_next_cpp(cards: Cards, next_card: int, threads: int = 4, iterations: int = 300000):
+    with subprocess.Popen(
+        ["./a.out", str(threads), str(iterations)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    ) as process:
+        input_data = str(cards.get_chosen_cards_num() + 1) + "\n"
+        input_data += " ".join(map(str, cards._chosen_cards)) + " " + str(int(next_card)) + "\n"
+        output, errors = process.communicate(input=input_data)
+        lines = output.split("\n")
+        call_price = float(lines[0])
+        put_price = float(lines[1])
+        call_delta = float(lines[2])
+        put_delta = float(lines[3])
+        return call_price, put_price, call_delta, put_delta
+
+
 def compile_option_pricing_cpp():
     with subprocess.Popen(
         ["g++", "-std=c++20", "-O3", "option_pricing.cpp"],

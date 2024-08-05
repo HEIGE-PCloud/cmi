@@ -1,10 +1,15 @@
 import queue
 import threading
 import time
+from typing import Optional, Tuple
 from cards import Cards
 from exchange import Exchange
 from model import Side
-from option_pricing import compile_option_pricing_cpp, option_pricing_cpp
+from option_pricing import (
+    compile_option_pricing_cpp,
+    option_pricing_cpp,
+    option_pricing_next_cpp,
+)
 from util import round_down_to_tick, round_up_to_tick
 
 
@@ -14,6 +19,7 @@ class Pricer:
         compile_option_pricing_cpp()
         self.reset()
         self.cards = cards
+        self.next_cards = [None] * 14
         self.threads = threads
         self.iterations = iterations
         self.queue: queue.Queue[int] = queue.Queue()
@@ -24,15 +30,34 @@ class Pricer:
 
     def option_pricing_cpp_thread(self):
         while True:
-            self.queue.get()
-            self.call, self.put, self.call_delta, self.put_delta = option_pricing_cpp(
-                self.cards, self.threads, self.iterations
-            )
+            next_card = self.queue.get()
+            if next_card == -1:
+                self.call, self.put, self.call_delta, self.put_delta = (
+                    option_pricing_cpp(self.cards, self.threads, self.iterations)
+                )
+            elif self.cards.get_chosen_cards_num() < 20:
+                self.next_cards[int(next_card)] = option_pricing_next_cpp(
+                    self.cards, next_card, self.threads, self.iterations
+                )
             self.queue.task_done()
 
     def pricing(self):
-        if self.call is None:
-            self.queue.put(1)
+        if self.cards.get_chosen_cards_num() == 0:
+            self.queue.put(-1)
+            self.pricing_next()
+            return
+
+        cache = self.next_cards[int(self.cards._chosen_cards[0])]
+        if cache is not None:
+            self.call, self.put, self.call_delta, self.put_delta = cache
+            self.next_cards = [None] * 14
+        else:
+            self.queue.put(-1)
+        self.pricing_next()
+
+    def pricing_next(self):
+        for next_card in set(self.cards.get_remaining_cards()):
+            self.queue.put(next_card)
 
     def reset(self):
         self.call = None
@@ -123,12 +148,10 @@ class Call(Strategy):
         if self.theo_price is None:
             self.exchange.delete_orders(self.symbol)
             return
-
         if time.time() - self.reset_time <= self.mm_interval:
             super().make_market()
         else:
             self.exchange.delete_orders(self.symbol)
-
 
 
 class Put(Strategy):
