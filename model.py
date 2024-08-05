@@ -142,6 +142,19 @@ class NewsResponse(BaseModel):
     time: str
     message: str
 
+    def to_card(self) -> int:
+        match self.message:
+            case "A":
+                return 1
+            case "J":
+                return 11
+            case "Q":
+                return 12
+            case "K":
+                return 13
+            case _:
+                return int(self.message)
+
 
 NewsResponseList = RootModel[List[NewsResponse]]
 
@@ -244,17 +257,17 @@ class PriceBook:
         book_header = ["#bids", "price", "#asks"]
 
         bid_width = (
-            max([bid.volume_width for bid in self.bids] + [len(book_header[0])]) + 2
+                max([bid.volume_width for bid in self.bids] + [len(book_header[0])]) + 2
         )
         ask_width = (
-            max([ask.volume_width for ask in self.asks] + [len(book_header[2])]) + 2
+                max([ask.volume_width for ask in self.asks] + [len(book_header[2])]) + 2
         )
         price_width = (
-            max(
-                [order.price_width for order in self.asks + self.bids]
-                + [len(book_header[1])]
-            )
-            + 2
+                max(
+                    [order.price_width for order in self.asks + self.bids]
+                    + [len(book_header[1])]
+                )
+                + 2
         )
 
         book_repr = [
@@ -275,17 +288,17 @@ class PriceBook:
         if not isinstance(other, PriceBook):
             return NotImplemented
         return (
-            self.instrument_id == other.instrument_id
-            and self.bids == other.bids
-            and self.asks == other.asks
+                self.instrument_id == other.instrument_id
+                and self.bids == other.bids
+                and self.asks == other.asks
         )
 
     @staticmethod
     def _format_level(
-        level: List[str], bid_width: int, price_width: int, ask_width: int
+            level: List[str], bid_width: int, price_width: int, ask_width: int
     ):
         assert (
-            len(level) == 3
+                len(level) == 3
         ), "_format_level expects 3 elements in level (#bid, price, #ask)"
         return f"{level[0].center(bid_width, ' ')}|{level[1].center(price_width, ' ')}|{level[2].center(ask_width, ' ')}"
 
@@ -314,7 +327,7 @@ class OrderStatus:
     """
 
     def __init__(
-        self, order_id: str, instrument_id: str, price: float, volume: int, side: Side
+            self, order_id: str, instrument_id: str, price: float, volume: int, side: Side
     ):
         self.order_id: str = order_id
         self.instrument_id: str = instrument_id
