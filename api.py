@@ -4,7 +4,7 @@ import requests
 import urllib3
 import logging
 
-from model import OrderCriteria, OrderRequest, OrderList, Side, StatusResponse
+from model import NewsResponseList, OrderCriteria, OrderRequest, OrderList, PositionResponseList, Side, StatusResponse
 from order_book import OrderBook
 from model import ProductResponseList
 
@@ -128,6 +128,26 @@ def delete_order_by_criteria(auth: BearerAuth, criteria: OrderCriteria):
     logger.debug(f"Delete order by criteria")
     res = s.delete(ENDPOINT + PATH, params=criteria.model_dump(), auth=auth, verify=False)
     ensure_success(res, "Delete order by criteria failed!")
+
+def get_position(auth: BearerAuth):
+    PATH = "/position/current-user"
+    logger.debug("Getting position")
+    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
+    if ensure_success(res, "Get position failed!"):
+        positions = PositionResponseList(res.json())
+        logger.debug(f"Getting position success: {positions}")
+        return positions
+    return None
+
+def get_news(auth: BearerAuth):
+    PATH = "/news"
+    logger.debug("Getting news")
+    res = s.get(ENDPOINT + PATH, auth=auth, verify=False)
+    if ensure_success(res, "Get news failed!"):
+        news = NewsResponseList(res.json())
+        logger.debug(f"Getting news success: {news}")
+        return news
+    return None
 
 def main():
     auth = sign_in("Junrong", "ads100")

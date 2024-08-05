@@ -1,9 +1,25 @@
 import queue
 import threading
-from typing import Dict, List
-from api import  get_all_products, sign_in, sign_up
-from connectivity import ConnectivityRequest, ConnectivityRequestType, market_feeder, market_status, connectivity
-from model import MarketStatus, OrderCriteria, OrderRequest, PositionLimit, ProductResponse, Side
+from typing import Dict, List, Optional
+from api import get_all_products, sign_in, sign_up
+import api
+from connectivity import (
+    ConnectivityRequest,
+    ConnectivityRequestType,
+    market_feeder,
+    market_status,
+    connectivity,
+)
+from model import (
+    MarketStatus,
+    OrderCriteria,
+    OrderRequest,
+    OrderStatus,
+    PositionLimit,
+    PriceBook,
+    ProductResponse,
+    Side,
+)
 from order_book import OrderBook
 
 
@@ -17,83 +33,67 @@ class Exchange:
         if sign_up_for_new_account:
             sign_up(username, password)
         self._auth = sign_in(username, password)
-        self._order_book_lock = threading.Lock()
         self.products: Dict[str, ProductResponse] = {}
-
-        # Hitters setup
         self.update_products()
 
-        # Market status setups
-        self._market_status = MarketStatus()
-        for product in list(self.products.values()):
-            self._market_status.positionLimits[product.symbol] = PositionLimit(shortLimit=0, longLimit=0)
-        self._market_status_thread = threading.Thread(
-            target=market_status,
-            args=[
-                self._market_status,
-                self._auth
-            ],
-            daemon=True
-        )
-        self._market_status_thread.start()
-
-        # Market feed setups
-        self._order_book: Dict[str, OrderBook] = {}
-        self._market_feed_thread = threading.Thread(
-            target=market_feeder,
-            args=[
-                self._order_book_lock,
-                list(self.products.keys()),
-                self._order_book,
-                self._auth,
-            ],
-            daemon=True,
-        )
-        self._market_feed_thread.start()
-
-        # Order sender setups
-        self._connectivity_queue: queue.Queue[ConnectivityRequest] = queue.Queue()
-        self._connectivity_thread = threading.Thread(
-            target=connectivity,
-            args=[self._connectivity_queue, self._auth],
-            daemon=True,
-        )
-        self._connectivity_thread.start()
-
-        # Order canceller setups
-        self._order_canceller_queue: queue.Queue[None] = queue.Queue()
-
-    def insert_order(self, order: OrderRequest):
+    def insert_order(
+        self, instrument_id: str, *, price: float, volume: int, side: Side
+    ):
         """
         Insert a limit order on an instrument.
         """
-        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.NEW_ORDER, data=order))
+        api.send_order(
+            self._auth,
+            OrderRequest(side=side, price=price, volume=volume, product=instrument_id),
+        )
 
-    def delete_order(self, id: str):
+    def delete_order(self, order_id: str):
         """
         Delete a specific outstanding limit order on an instrument.
         """
-        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER, data=id))
+        api.delete_order(self._auth, order_id)
+
+    def delete_orders(self, instrument_id: str):
+        api.delete_order_by_criteria(self._auth, OrderCriteria(product=instrument_id, side=Side.BUY, price=None))
+        api.delete_order_by_criteria(self._auth, OrderCriteria(product=instrument_id, side=Side.SELL, price=None))
 
     def delete_all_orders(self):
-        """
-        Delete all outstanding orders on an instrument.
-        """
-        for product in self._products:
-            product.symbol
-            self.delete_all_orders_for_symbol(product.symbol)
+        for product in self.products:
+            self.delete_orders(product)
 
-    def delete_all_orders_for_symbol(self, symbol: str):
-        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA, data=OrderCriteria(product=symbol, side=Side.BUY, price=None)))
-        self._connectivity_queue.put(ConnectivityRequest(type=ConnectivityRequestType.CANCEL_ORDER_BY_CRITERIA, data=OrderCriteria(product=symbol, side=Side.SELL, price=None)))
+    def get_outstanding_orders(self, instrument_id: str) -> Optional[Dict[str, OrderStatus]]:
+        orders = api.get_current_orders(self._auth)
+        if orders is None:
+            return None
+        res = {}
+        for order in orders.root:
+            res[order.id] = OrderStatus(order.product, order.id, order.price, order.volume, order.side)
+        return res
+    
+    def get_last_price_book(self, instrument_id: str) -> PriceBook:
+        order_book = api.get_order_book(self._auth, instrument_id)
+        # TODO
+        price_book = PriceBook()
+        return price_book
 
-    def get_product(self, product: str):
+    def get_positions(self) -> Dict[str, int]:
+        # TODO
+        return {}
+    
+    def get_pnl(self):
+        # TODO
+        pass
+    
+    def get_news(self):
+        pass
+
+    def get_product(self, product: str) -> ProductResponse:
         """
         Return all products on the exchange.
         """
         return self.products[product]
 
-    def update_products(self):
+    def update_products(self) -> None:
         """
         Update all products on the exchange.
         """
@@ -101,13 +101,14 @@ class Exchange:
         for product in products:
             self.products[product.symbol] = product
 
-    def get_rank(self) -> int:
-        return self._market_status.userRanking
-                
-    def join(self):
-        self._connectivity_thread.join()
+    def get_rank(self) -> Optional[int]:
+        res = api.get_status(self._auth)
+        if res is None:
+            return None
+        return res.userRanking
+        
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     USERNAME = "test2"
     PASSWORD = "test2"
     cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
