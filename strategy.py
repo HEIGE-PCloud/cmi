@@ -45,7 +45,7 @@ class Strategy:
         self.exchange = exchange
         self.symbol = symbol
         self.tick_size = exchange.products[symbol].tickSize
-        self.credit = 1
+        self.credit = 1.0
         self.position_limit = 100
         self.reset_price()
 
@@ -54,14 +54,12 @@ class Strategy:
         if theo is None:
             self.exchange.delete_orders(self.symbol)
             return
-        
-        bid_price = (
-            round_down_to_tick(theo, self.tick_size)
-            - self.credit * self.tick_size
+
+        bid_price = round_down_to_tick(
+            theo - self.credit * self.tick_size, self.tick_size
         )
-        ask_price = (
-            round_up_to_tick(theo, self.tick_size)
-            + self.credit * self.tick_size
+        ask_price = round_up_to_tick(
+            theo + self.credit * self.tick_size, self.tick_size
         )
         bid_price = max(0, bid_price)
         ask_price = max(bid_price + self.tick_size, ask_price)
@@ -86,6 +84,7 @@ class Strategy:
         self.theo_price = None
         self.bid_price = None
         self.ask_price = None
+        self.exchange.delete_orders(self.symbol)
 
 
 class Future(Strategy):
@@ -93,6 +92,7 @@ class Future(Strategy):
         super().__init__(exchange, symbol)
         self.cards = cards
         self.position_limit = 100
+        self.credit = 0.5
 
     def make_market(self):
         if self.theo_price is None:
