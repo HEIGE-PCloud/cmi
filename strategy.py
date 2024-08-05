@@ -64,7 +64,7 @@ class Strategy:
             + self.credit * self.tick_size
         )
         bid_price = max(0, bid_price)
-        ask_price = max(bid_price + self.credit, ask_price)
+        ask_price = max(bid_price + self.tick_size, ask_price)
         self.exchange.insert_order(
             instrument_id=self.symbol,
             price=bid_price,
