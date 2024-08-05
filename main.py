@@ -12,10 +12,9 @@ import atexit
 USERNAME = "test"
 PASSWORD = "test"
 
+cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
 
 def main():
-    cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
-    atexit.register(cmi.delete_all_orders)
     cards = Cards()
     pricer = Pricer(cards, threads=4, iterations=100000)
     strategies = [
@@ -30,4 +29,7 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    main()
+    try:
+        main()
+    except Exception:
+        cmi.delete_all_orders()

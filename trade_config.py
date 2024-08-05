@@ -21,9 +21,12 @@ class TradeConfig:
         self.pricer.pricing()
         self.strategies = strategies
 
-    def update_cards(self):
+    def update_cards(self, cards = None):
         self.pricer.reset()
         for strategy in self.strategies:
             strategy.reset_price()
-        self.cards.set_chosen_cards(self.get_cards_value())
+        if cards is None:
+            self.cards.set_chosen_cards(self.get_cards_value())
+        else:
+            self.cards.set_chosen_cards(cards)
         self.pricer.pricing()
