@@ -7,15 +7,17 @@ from strategy import Call, Future, Pricer, Put
 from trade import trade
 from trade_config import TradeConfig
 from ui import start_ui
+import atexit
 
-USERNAME = "test2"
-PASSWORD = "test2"
+USERNAME = "test"
+PASSWORD = "test"
 
 
 def main():
     cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
-    pricer = Pricer()
+    atexit.register(cmi.delete_all_orders)
     cards = Cards()
+    pricer = Pricer(cards, threads=4, iterations=100000)
     strategies = [
         Future(cmi, "FUTURE", cards),
         Call(cmi, "150 CALL", cards, pricer),

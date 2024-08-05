@@ -105,7 +105,7 @@ def send_order(auth: BearerAuth, order: OrderRequest):
     path = "/order"
     logger.debug(f"Sending new order: {order}")
     res = s.post(ENDPOINT + path, json=order.model_dump(), auth=auth, verify=False)
-    if ensure_success(res, "Failed to send new order"):
+    if res.ok:
         logger.debug("Sending new order success")
         return OrderResponse(**res.json())
     return None

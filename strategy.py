@@ -46,35 +46,41 @@ class Strategy:
         self.symbol = symbol
         self.tick_size = exchange.products[symbol].tickSize
         self.credit = 1
+        self.position_limit = 100
         self.reset_price()
 
     def make_market(self):
-        self.bid_price = (
-            round_down_to_tick(self.theo_price, self.tick_size)
+        theo = self.theo_price
+        if theo is None:
+            self.exchange.delete_orders(self.symbol)
+            return
+        
+        bid_price = (
+            round_down_to_tick(theo, self.tick_size)
             - self.credit * self.tick_size
         )
-        self.ask_price = (
-            round_up_to_tick(self.theo_price, self.tick_size)
+        ask_price = (
+            round_up_to_tick(theo, self.tick_size)
             + self.credit * self.tick_size
         )
+        bid_price = max(0, bid_price)
+        ask_price = max(bid_price + self.credit, ask_price)
         self.exchange.insert_order(
-            OrderRequest(
-                side=Side.BUY,
-                price=self.bid_price,
-                volume=self.position_limit * 2,
-                product=self.symbol,
-            )
+            instrument_id=self.symbol,
+            price=bid_price,
+            volume=self.position_limit * 2,
+            side=Side.BUY,
         )
 
         self.exchange.insert_order(
-            OrderRequest(
-                side=Side.SELL,
-                price=self.ask_price,
-                volume=self.position_limit * 2,
-                product=self.symbol,
-            )
+            instrument_id=self.symbol,
+            price=ask_price,
+            volume=self.position_limit * 2,
+            side=Side.SELL,
         )
 
+        self.bid_price = bid_price
+        self.ask_price = ask_price
 
     def reset_price(self):
         self.theo_price = None
@@ -90,6 +96,7 @@ class Future(Strategy):
 
     def make_market(self):
         if self.theo_price is None:
+            self.exchange.delete_orders(self.symbol)
             self.theo_price = self.cards.get_theoretical_price()
 
         super().make_market()
@@ -101,15 +108,16 @@ class Call(Strategy):
     ) -> None:
         super().__init__(exchange, symbol)
         self.cards = cards
-        self.position_limit = 100
+        self.position_limit = 250
         self.credit = 2
         self.pricer = pricer
 
     def make_market(self):
         self.theo_price = self.pricer.call
         if self.theo_price is None:
-            return
+            self.exchange.delete_orders(self.symbol)
         super().make_market()
+
 
 class Put(Strategy):
     def __init__(
@@ -117,13 +125,13 @@ class Put(Strategy):
     ) -> None:
         super().__init__(exchange, symbol)
         self.cards = cards
-        self.position_limit = 100
+        self.position_limit = 250
         self.credit = 2
         self.pricer = pricer
+        print(self.tick_size)
 
     def make_market(self):
         self.theo_price = self.pricer.put
         if self.theo_price is None:
-            return
+            self.exchange.delete_orders(self.symbol)
         super().make_market()
-        

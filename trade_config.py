@@ -12,7 +12,7 @@ class TradeConfig:
         exchange: Exchange,
         cards: Cards,
         pricer: Pricer,
-        strategies: List[Strategy],
+        strategies: List[Strategy]
     ) -> None:
         self.exchange = exchange
         self.cards = cards
@@ -23,5 +23,7 @@ class TradeConfig:
 
     def update_cards(self):
         self.pricer.reset()
+        for strategy in self.strategies:
+            strategy.reset_price()
         self.cards.set_chosen_cards(self.get_cards_value())
         self.pricer.pricing()

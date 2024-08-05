@@ -13,6 +13,7 @@ class Exchange:
         self._auth = sign_in(username, password)
         self.products: Dict[str, ProductResponse] = {}
         self.update_products()
+        self.delete_all_orders()
 
     def insert_order(self, instrument_id: str, *, price: float, volume: int, side: Side):
         """
@@ -21,8 +22,9 @@ class Exchange:
         return api.send_order(self._auth, OrderRequest(side=side, price=price, volume=volume, product=instrument_id))
 
     def insert_ioc_order(self, instrument_id: str, price: float, volume: int, side: Side):
-        res = self.insert_order(self._auth, instrument_id, price=price, volume=volume, side=side)
-        self.delete_order(res.id)
+        res = api.send_order(self._auth, OrderRequest(side=side, price=price, volume=volume, product=instrument_id))
+        if res is not None:
+            self.delete_order(res.id)
 
     def delete_order(self, order_id: str):
         """

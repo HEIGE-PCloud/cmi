@@ -112,11 +112,11 @@ class TheoUI:
         new_data = dict(
             field_name=self.field_name,
             value=[
-                self.config.future_theo,
-                self.config.call_theo,
-                self.config.put_theo,
-                self.config.call_delta,
-                self.config.put_delta,
+                self.config.cards.get_theoretical_price(),
+                self.config.pricer.call,
+                self.config.pricer.put,
+                self.config.pricer.call_delta,
+                self.config.pricer.put_delta,
             ],
         )
         self.source.data = new_data
