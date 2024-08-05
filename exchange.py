@@ -1,40 +1,24 @@
 import datetime
 from typing import Dict, List, Optional
-from api import get_all_products, sign_in, sign_up
+
 import api
-from model import (
-    OrderCriteria,
-    OrderRequest,
-    OrderStatus,
-    PriceBook,
-    PriceVolume,
-    ProductResponse,
-    Side,
-)
+from api import get_all_products, sign_in, sign_up
+from model import (OrderCriteria, OrderRequest, OrderStatus, PriceBook, PriceVolume, ProductResponse, Side, )
+
 
 class Exchange:
-    def __init__(
-        self,
-        username: str,
-        password: str,
-        sign_up_for_new_account=True,
-    ):
+    def __init__(self, username: str, password: str, sign_up_for_new_account=True, ):
         if sign_up_for_new_account:
             sign_up(username, password)
         self._auth = sign_in(username, password)
         self.products: Dict[str, ProductResponse] = {}
         self.update_products()
 
-    def insert_order(
-        self, instrument_id: str, *, price: float, volume: int, side: Side
-    ):
+    def insert_order(self, instrument_id: str, *, price: float, volume: int, side: Side):
         """
         Insert a limit order on an instrument.
         """
-        api.send_order(
-            self._auth,
-            OrderRequest(side=side, price=price, volume=volume, product=instrument_id),
-        )
+        api.send_order(self._auth, OrderRequest(side=side, price=price, volume=volume, product=instrument_id))
 
     def delete_order(self, order_id: str):
         """
@@ -43,28 +27,20 @@ class Exchange:
         api.delete_order(self._auth, order_id)
 
     def delete_orders(self, instrument_id: str):
-        api.delete_order_by_criteria(
-            self._auth, OrderCriteria(product=instrument_id, side=Side.BUY, price=None)
-        )
-        api.delete_order_by_criteria(
-            self._auth, OrderCriteria(product=instrument_id, side=Side.SELL, price=None)
-        )
+        api.delete_order_by_criteria(self._auth, OrderCriteria(product=instrument_id, side=Side.BUY, price=None))
+        api.delete_order_by_criteria(self._auth, OrderCriteria(product=instrument_id, side=Side.SELL, price=None))
 
     def delete_all_orders(self):
         for product in self.products:
             self.delete_orders(product)
 
-    def get_outstanding_orders(
-        self,
-    ) -> Optional[Dict[str, OrderStatus]]:
+    def get_outstanding_orders(self, ) -> Optional[Dict[str, OrderStatus]]:
         orders = api.get_current_orders(self._auth)
         if orders is None:
             return None
         res = {}
         for order in orders.root:
-            res[order.id] = OrderStatus(
-                order.product, order.id, order.price, order.volume, order.side
-            )
+            res[order.id] = OrderStatus(order.product, order.id, order.price, order.volume, order.side)
         return res
 
     def get_last_price_book(self, instrument_id: str) -> Optional[PriceBook]:
@@ -81,12 +57,7 @@ class Exchange:
             asks.append(PriceVolume(price=sell.price, volume=sell.volume))
         bids.sort(key=lambda bid: bid.price, reverse=True)
         asks.sort(key=lambda ask: ask.price, reverse=False)
-        price_book = PriceBook(
-            timestamp=datetime.datetime.now(),
-            instrument_id=instrument_id,
-            bids=bids,
-            asks=asks,
-        )
+        price_book = PriceBook(timestamp=datetime.datetime.now(), instrument_id=instrument_id, bids=bids, asks=asks, )
         return price_book
 
     def get_positions(self) -> Optional[Dict[str, int]]:

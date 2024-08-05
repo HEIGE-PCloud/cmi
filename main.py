@@ -1,8 +1,5 @@
 import logging
-import time
 from exchange import Exchange
-from hitter import Hitter
-from model import OrderRequest, Side
 from strategy import Future
 from trade import trade
 from trade_config import TradeConfig
