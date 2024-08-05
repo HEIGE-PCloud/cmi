@@ -4,7 +4,8 @@ import requests
 import urllib3
 import logging
 
-from model import NewsResponseList, OrderCriteria, OrderRequest, OrderList, PositionResponseList, Side, StatusResponse
+from model import NewsResponseList, OrderCriteria, OrderRequest, OrderList, PositionResponseList, Side, StatusResponse, \
+    OrderResponse
 from order_book import OrderBook
 from model import ProductResponseList
 
@@ -106,6 +107,8 @@ def send_order(auth: BearerAuth, order: OrderRequest):
     res = s.post(ENDPOINT + path, json=order.model_dump(), auth=auth, verify=False)
     if ensure_success(res, "Failed to send new order"):
         logger.debug("Sending new order success")
+        return OrderResponse(**res.json())
+    return None
 
 
 def get_current_orders(auth: BearerAuth) -> Optional[OrderList]:

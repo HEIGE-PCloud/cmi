@@ -19,10 +19,15 @@ class OrderRequest(BaseModel):
 
 class OrderResponse(BaseModel):
     id: str
+    status: str
+    product: str
     side: Side
     price: float
     volume: int
-    product: str
+    filled: int
+    message: str
+    user: str
+    timestamp: datetime.datetime
 
 
 class OrderCriteria(BaseModel):
@@ -139,7 +144,7 @@ PositionLimitList = RootModel[List[PositionLimitResponse]]
 
 
 class NewsResponse(BaseModel):
-    time: str
+    time: datetime.datetime
     message: str
 
     def to_card(self) -> int:
