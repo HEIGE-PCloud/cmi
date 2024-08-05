@@ -1,8 +1,9 @@
 import queue
 import threading
+import time
 from cards import Cards
 from exchange import Exchange
-from model import OrderRequest, Side
+from model import Side
 from option_pricing import compile_option_pricing_cpp, option_pricing_cpp
 from util import round_down_to_tick, round_up_to_tick
 
@@ -47,7 +48,8 @@ class Strategy:
         self.tick_size = exchange.products[symbol].tickSize
         self.credit = 1.0
         self.position_limit = 100
-        self.reset_price()
+        self.mm_interval = 9.5
+        self.reset()
 
     def make_market(self):
         theo = self.theo_price
@@ -80,11 +82,12 @@ class Strategy:
         self.bid_price = bid_price
         self.ask_price = ask_price
 
-    def reset_price(self):
+    def reset(self):
         self.theo_price = None
         self.bid_price = None
         self.ask_price = None
         self.exchange.delete_orders(self.symbol)
+        self.reset_time = time.time()
 
 
 class Future(Strategy):
@@ -99,7 +102,10 @@ class Future(Strategy):
             self.exchange.delete_orders(self.symbol)
             self.theo_price = self.cards.get_theoretical_price()
 
-        super().make_market()
+        if time.time() - self.reset_time <= self.mm_interval:
+            super().make_market()
+        else:
+            self.exchange.delete_orders(self.symbol)
 
 
 class Call(Strategy):
@@ -116,7 +122,13 @@ class Call(Strategy):
         self.theo_price = self.pricer.call
         if self.theo_price is None:
             self.exchange.delete_orders(self.symbol)
-        super().make_market()
+            return
+
+        if time.time() - self.reset_time <= self.mm_interval:
+            super().make_market()
+        else:
+            self.exchange.delete_orders(self.symbol)
+
 
 
 class Put(Strategy):
@@ -134,4 +146,9 @@ class Put(Strategy):
         self.theo_price = self.pricer.put
         if self.theo_price is None:
             self.exchange.delete_orders(self.symbol)
-        super().make_market()
+            return
+
+        if time.time() - self.reset_time <= self.mm_interval:
+            super().make_market()
+        else:
+            self.exchange.delete_orders(self.symbol)
