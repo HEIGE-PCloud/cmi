@@ -1,27 +1,16 @@
-import queue
-import threading
+import datetime
 from typing import Dict, List, Optional
 from api import get_all_products, sign_in, sign_up
 import api
-from connectivity import (
-    ConnectivityRequest,
-    ConnectivityRequestType,
-    market_feeder,
-    market_status,
-    connectivity,
-)
 from model import (
-    MarketStatus,
     OrderCriteria,
     OrderRequest,
     OrderStatus,
-    PositionLimit,
     PriceBook,
+    PriceVolume,
     ProductResponse,
     Side,
 )
-from order_book import OrderBook
-
 
 class Exchange:
     def __init__(
@@ -54,38 +43,63 @@ class Exchange:
         api.delete_order(self._auth, order_id)
 
     def delete_orders(self, instrument_id: str):
-        api.delete_order_by_criteria(self._auth, OrderCriteria(product=instrument_id, side=Side.BUY, price=None))
-        api.delete_order_by_criteria(self._auth, OrderCriteria(product=instrument_id, side=Side.SELL, price=None))
+        api.delete_order_by_criteria(
+            self._auth, OrderCriteria(product=instrument_id, side=Side.BUY, price=None)
+        )
+        api.delete_order_by_criteria(
+            self._auth, OrderCriteria(product=instrument_id, side=Side.SELL, price=None)
+        )
 
     def delete_all_orders(self):
         for product in self.products:
             self.delete_orders(product)
 
-    def get_outstanding_orders(self, instrument_id: str) -> Optional[Dict[str, OrderStatus]]:
+    def get_outstanding_orders(
+        self,
+    ) -> Optional[Dict[str, OrderStatus]]:
         orders = api.get_current_orders(self._auth)
         if orders is None:
             return None
         res = {}
         for order in orders.root:
-            res[order.id] = OrderStatus(order.product, order.id, order.price, order.volume, order.side)
+            res[order.id] = OrderStatus(
+                order.product, order.id, order.price, order.volume, order.side
+            )
         return res
-    
-    def get_last_price_book(self, instrument_id: str) -> PriceBook:
+
+    def get_last_price_book(self, instrument_id: str) -> Optional[PriceBook]:
         order_book = api.get_order_book(self._auth, instrument_id)
-        # TODO
-        price_book = PriceBook()
+        if order_book is None:
+            return None
+        bids: List[PriceVolume] = []
+        asks: List[PriceVolume] = []
+        buys = order_book.buy.root
+        sells = order_book.sell.root
+        for buy in buys:
+            bids.append(PriceVolume(price=buy.price, volume=buy.volume))
+        for sell in sells:
+            asks.append(PriceVolume(price=sell.price, volume=sell.volume))
+        bids.sort(key=lambda bid: bid.price, reverse=True)
+        asks.sort(key=lambda ask: ask.price, reverse=False)
+        price_book = PriceBook(
+            timestamp=datetime.datetime.now(),
+            instrument_id=instrument_id,
+            bids=bids,
+            asks=asks,
+        )
         return price_book
 
-    def get_positions(self) -> Dict[str, int]:
-        # TODO
-        return {}
-    
-    def get_pnl(self):
-        # TODO
-        pass
-    
+    def get_positions(self) -> Optional[Dict[str, int]]:
+        positions = api.get_position(self._auth)
+        if positions is None:
+            return None
+        res = {}
+        for position in positions.root:
+            res[position.product] = position.volume
+        return res
+
     def get_news(self):
-        pass
+        return api.get_news(self._auth)
 
     def get_product(self, product: str) -> ProductResponse:
         """
@@ -106,7 +120,7 @@ class Exchange:
         if res is None:
             return None
         return res.userRanking
-        
+
 
 if __name__ == "__main__":
     USERNAME = "test2"
