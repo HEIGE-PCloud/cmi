@@ -1,7 +1,6 @@
 import queue
 import threading
 import time
-from typing import Optional, Tuple
 from cards import Cards
 from exchange import Exchange
 from model import Side
