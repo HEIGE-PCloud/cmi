@@ -143,7 +143,7 @@ class Call(Strategy):
         super().__init__(exchange, symbol)
         self.cards = cards
         self.position_limit = 250
-        self.credit = 2
+        self.credit = 1
         self.pricer = pricer
 
     def make_market(self):
@@ -164,7 +164,7 @@ class Put(Strategy):
         super().__init__(exchange, symbol)
         self.cards = cards
         self.position_limit = 250
-        self.credit = 2
+        self.credit = 1
         self.pricer = pricer
         print(self.tick_size)
 
