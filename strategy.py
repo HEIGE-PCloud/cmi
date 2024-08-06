@@ -203,6 +203,8 @@ class Hedge:
         if put_delta is None:
             logger.warn("Hedging failed, put delta is None")
             return
+        logger.info("Positions: ", positions)
+
         total_delta = int(
             positions["FUTURE"]
             + positions["150 CALL"] * call_delta
