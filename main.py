@@ -7,6 +7,7 @@ from strategy import Call, Future, Hedge, Pricer, Put
 from trade import trade
 from trade_config import TradeConfig
 from ui import start_ui
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,9 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    main()
-    # try:
-    #     main()
-    # except Exception as error:
-    #     cmi.delete_all_orders()
-    #     print(error)
-    #     logging.error(f"Exception thrown, cancelled all orders, quitting")
+    try:
+        main()
+    except Exception as error:
+        cmi.delete_all_orders()
+        logger.exception(error)
+        logger.error(f"Exception thrown, cancelled all orders, quitting")
