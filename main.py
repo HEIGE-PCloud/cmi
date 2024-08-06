@@ -7,7 +7,8 @@ from strategy import Call, Future, Hedge, Pricer, Put
 from trade import trade
 from trade_config import TradeConfig
 from ui import start_ui
-import atexit
+
+logger = logging.getLogger(__name__)
 
 USERNAME = "test"
 PASSWORD = "test"
@@ -32,5 +33,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     try:
         main()
-    except Exception:
+    except Exception as error:
         cmi.delete_all_orders()
+        logging.error(f"Exception thrown, cancelled all orders, quitting: {error}")
+        
