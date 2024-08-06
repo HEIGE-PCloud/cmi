@@ -165,7 +165,6 @@ class Put(Strategy):
         self.position_limit = 250
         self.credit = 1
         self.pricer = pricer
-        print(self.tick_size)
 
     def make_market(self):
         self.theo_price = self.pricer.put
