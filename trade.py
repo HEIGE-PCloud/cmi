@@ -14,11 +14,10 @@ def trade(config: TradeConfig):
         news = config.exchange.get_news()
         if news is not None:
             size = len(news.root)
-            if size == config.cards.get_chosen_cards_num():
-                for strategy in config.strategies:
-                    strategy.make_market()
-            else:
+            if size != config.cards.get_chosen_cards_num():
                 config.update_cards(news_to_cards(news))
+            for strategy in config.strategies:
+                strategy.make_market()
         else:
             config.exchange.delete_all_orders()
 

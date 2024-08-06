@@ -126,7 +126,6 @@ class Future(Strategy):
 
     def make_market(self):
         if self.theo_price is None:
-            self.exchange.delete_orders(self.symbol)
             self.theo_price = self.cards.get_theoretical_price()
 
         if time.time() - self.reset_time <= self.mm_interval:
@@ -148,8 +147,9 @@ class Call(Strategy):
     def make_market(self):
         self.theo_price = self.pricer.call
         if self.theo_price is None:
-            self.exchange.delete_orders(self.symbol)
+            logger.warn("Call has None theo_price")
             return
+
         if time.time() - self.reset_time <= self.mm_interval:
             super().make_market()
         else:
@@ -170,7 +170,7 @@ class Put(Strategy):
     def make_market(self):
         self.theo_price = self.pricer.put
         if self.theo_price is None:
-            self.exchange.delete_orders(self.symbol)
+            logger.warn("Put has None theo_price")
             return
 
         if time.time() - self.reset_time <= self.mm_interval:
@@ -185,10 +185,13 @@ class Hedge:
         self.pricer = pricer
         self.hedge_interval = 9.6
         self.credit = 0
+        self.has_hedged = False
         self.reset()
 
     def hedge(self, theo: float):
         if time.time() - self.reset_time <= self.hedge_interval:
+            return
+        if self.has_hedged:
             return
 
         positions = self.exchange.get_positions()
@@ -211,7 +214,9 @@ class Hedge:
         )
         if total_delta == 0:
             logger.info("Hedging delta is 0, no need to hedge")
+            self.has_hedged = True
             return
+
         logger.info(f"Hedging total_delta {total_delta}")
         if total_delta < 0:
             bid_price = round_up_to_tick(theo + 0.5 * self.credit, 0.5)
@@ -228,3 +233,4 @@ class Hedge:
 
     def reset(self):
         self.reset_time = time.time()
+        self.has_hedged = False
