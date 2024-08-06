@@ -2,7 +2,7 @@ from typing import List
 from cards import Cards
 from exchange import Exchange
 
-from strategy import Call, Future, Hedge, Pricer, Put
+from strategy import Call, Future, Hedge, Pricer, Put, Strategy
 
 
 class TradeConfig:
@@ -26,6 +26,7 @@ class TradeConfig:
         self.call = call
         self.put = put
         self.hedge = hedge
+        self.strategies: List[Strategy] = [future, call, put]
 
     def update_cards(self, cards = None):
         self.pricer.reset()

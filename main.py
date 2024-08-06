@@ -38,9 +38,10 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    try:
-        main()
-    except Exception as error:
-        cmi.delete_all_orders()
-        print(error)
-        logging.error(f"Exception thrown, cancelled all orders, quitting")
+    main()
+    # try:
+    #     main()
+    # except Exception as error:
+    #     cmi.delete_all_orders()
+    #     print(error)
+    #     logging.error(f"Exception thrown, cancelled all orders, quitting")
