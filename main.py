@@ -3,7 +3,7 @@ from threading import Thread
 
 from cards import Cards
 from exchange import Exchange
-from strategy import Call, Future, Pricer, Put
+from strategy import Call, Future, Hedge, Pricer, Put
 from trade import trade
 from trade_config import TradeConfig
 from ui import start_ui
@@ -22,7 +22,8 @@ def main():
         Call(cmi, "150 CALL", cards, pricer),
         Put(cmi, "130 PUT", cards, pricer),
     ]
-    trade_config = TradeConfig(cmi, cards, pricer, strategies)
+    hedge = Hedge()
+    trade_config = TradeConfig(cmi, cards, pricer, strategies, hedge=hedge)
     Thread(target=start_ui, args=(cmi, trade_config), daemon=True).start()
     trade(trade_config)
 

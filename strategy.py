@@ -11,6 +11,9 @@ from option_pricing import (
     option_pricing_next_cpp,
 )
 from util import round_down_to_tick, round_up_to_tick
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Pricer:
@@ -175,3 +178,50 @@ class Put(Strategy):
             super().make_market()
         else:
             self.exchange.delete_orders(self.symbol)
+
+
+class Hedge:
+    def __init__(self, exchange: Exchange, pricer: Pricer) -> None:
+        self.exchange = exchange
+        self.pricer = pricer
+        self.hedge_interval = 9.6
+        self.reset()
+
+    def hedge(self, theo: float):
+        if time.time() - self.reset_time <= self.hedge_interval:
+            return
+        
+        positions = self.exchange.get_positions()
+        call_delta = self.pricer.call_delta
+        put_delta = self.pricer.put_delta
+        if positions is None:
+            logger.warn("Hedging failed, get positions failed")
+            return
+        if call_delta is None:
+            logger.warn("Hedging failed, call delta is None")
+            return
+        if put_delta is None:
+            logger.warn("Hedging failed, put delta is None")
+            return
+        total_delta = int(
+            positions["FUTURE"]
+            + positions["150 CALL"] * call_delta
+            + positions["130 PUT"] * put_delta
+        )
+        if total_delta == 0:
+            logger.info("Hedging delta is 0, no need to hedge")
+            return
+        logger.info(f"Hedging total_delta {total_delta}")
+        if total_delta < 0:
+            bid_price = round_up_to_tick(theo)
+            self.exchange.insert_ioc_order(
+                "FUTURE", price=bid_price, volume=(-1 * total_delta), side=Side.BUY
+            )
+        else:
+            ask_price = round_down_to_tick(theo)
+            self.exchange.insert_ioc_order(
+                "FUTURE", price=ask_price, volume=total_delta, side=Side.SELL
+            )
+
+    def reset(self):
+        self.reset_time = time.time()
