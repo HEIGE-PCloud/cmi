@@ -18,7 +18,7 @@ cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
 
 def main():
     cards = Cards()
-    pricer = Pricer(cards, threads=4, iterations=100000)
+    pricer = Pricer(cards, threads=10, iterations=100000)
     future = Future(cmi, "FUTURE", cards)
     call = Call(cmi, "150 CALL", cards, pricer)
     put = Put(cmi, "130 PUT", cards, pricer)

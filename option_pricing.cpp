@@ -99,27 +99,45 @@ inline double put_payoff(double strike_price, double underlying_price) {
   return 0;
 }
 
-std::pair<double, double> option_pricing(double call_strike, double put_strike,
-                                         const Cards& cards,
-                                         uint64_t iterations) {
+struct OptionPricingResult {
+  double call_price;
+  double put_price;
+  double call_delta;
+  double put_delta;
+};
+
+OptionPricingResult option_pricing(double call_strike, double put_strike,
+                                   const Cards& cards, uint64_t iterations) {
   std::vector<double> remaining_cards = cards.get_remaining_cards();
   std::random_device rd;
   std::mt19937 g(rd());
   double call_price_sum = 0;
   double put_price_sum = 0;
+  double call_cnt = 0;
+  double put_cnt = 0;
   for (uint64_t c = 1; c <= iterations; c++) {
     std::shuffle(std::begin(remaining_cards), std::end(remaining_cards), g);
-    double underlying_price =
+    const double underlying_price =
         static_cast<double>(cards.get_chosen_cards_sum()) +
         std::accumulate(
             std::begin(remaining_cards),
             std::begin(remaining_cards) + cards.get_remaining_cards_to_choose(),
             0.0);
-    call_price_sum += call_payoff(call_strike, underlying_price);
-    put_price_sum += put_payoff(put_strike, underlying_price);
+    const double call_price = call_payoff(call_strike, underlying_price);
+    const double put_price = put_payoff(put_strike, underlying_price);
+    call_price_sum += call_price;
+    put_price_sum += put_price;
+    if (call_price > 0) {
+      call_cnt++;
+    }
+    if (put_price > 0) {
+      put_cnt++;
+    }
   }
   return {call_price_sum / static_cast<double>(iterations),
-          put_price_sum / static_cast<double>(iterations)};
+          put_price_sum / static_cast<double>(iterations),
+          call_cnt / static_cast<double>(iterations),
+          put_cnt / static_cast<double>(iterations)};
 }
 
 int main(int argc, char* argv[]) {
@@ -142,24 +160,15 @@ int main(int argc, char* argv[]) {
     std::cin >> res;
     cards.choose_card(res);
   }
-  bool compute_delta = cnt < 20;
   std::chrono::steady_clock::time_point begin =
       std::chrono::steady_clock::now();
 
   Cards cards_delta = cards;
-  if (compute_delta) {
-    if (cards.get_theoretical_price() <= 140) {
-      cards_delta.choose_card(cards.get_largest_remaining_card());
-    } else {
-      cards_delta.choose_card(cards.get_smallest_remaining_card());
-    }
-  }
-  std::vector<std::future<std::pair<double, double>>> option_threads;
-  std::vector<std::future<std::pair<double, double>>> delta_threads;
+  std::vector<std::future<OptionPricingResult>> option_threads;
   double call_price_sum = 0;
   double put_price_sum = 0;
-  double delta_call_price_sum = 0;
-  double delta_put_price_sum = 0;
+  double delta_call_sum = 0;
+  double delta_put_sum = 0;
 
   option_threads.reserve(thread_count);
   for (int i = 0; i < thread_count; i++) {
@@ -167,41 +176,22 @@ int main(int argc, char* argv[]) {
                                         130, cards,
                                         total_simulation_iterations));
   }
-  if (compute_delta) {
-    delta_threads.reserve(thread_count);
-    for (int i = 0; i < thread_count; i++) {
-      delta_threads.push_back(std::async(std::launch::async, option_pricing,
-                                         150, 130, cards_delta,
-                                         total_simulation_iterations));
-    }
-  }
   for (int i = 0; i < thread_count; i++) {
     option_threads[i].wait();
     auto ans = option_threads[i].get();
-    call_price_sum += ans.first;
-    put_price_sum += ans.second;
+    call_price_sum += ans.call_price;
+    put_price_sum += ans.put_price;
+    delta_call_sum += ans.call_delta;
+    delta_put_sum += ans.put_delta;
   }
-  if (compute_delta) {
-    for (int i = 0; i < thread_count; i++) {
-      delta_threads[i].wait();
-      auto ans = delta_threads[i].get();
-      delta_call_price_sum += ans.first;
-      delta_put_price_sum += ans.second;
-    }
-  }
+
   double call_price = call_price_sum / thread_count;
   double put_price = put_price_sum / thread_count;
-  double delta_call_price = delta_call_price_sum / thread_count;
-  double delta_put_price = delta_put_price_sum / thread_count;
+  double delta_call = delta_call_sum / thread_count;
+  double delta_put = -1 * delta_put_sum / thread_count;
 
   double delta_underlying_price =
       cards_delta.get_theoretical_price() - cards.get_theoretical_price();
-  double delta_call =
-      compute_delta ? (delta_call_price - call_price) / delta_underlying_price
-                    : 0;
-  double delta_put =
-      compute_delta ? (delta_put_price - put_price) / delta_underlying_price
-                    : 0;
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   std::cerr << "option_pricing.cpp: duration = "
             << (std::chrono::duration_cast<std::chrono::microseconds>(end -
