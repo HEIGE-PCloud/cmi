@@ -185,6 +185,7 @@ class Hedge:
         self.exchange = exchange
         self.pricer = pricer
         self.hedge_interval = 9.6
+        self.credit = 0
         self.reset()
 
     def hedge(self, theo: float):
@@ -214,12 +215,14 @@ class Hedge:
             return
         logger.info(f"Hedging total_delta {total_delta}")
         if total_delta < 0:
-            bid_price = round_up_to_tick(theo)
+            bid_price = round_up_to_tick(theo + 0.5 * self.credit)
+            logger.info(f"Hedging by buying FUTURE at price {bid_price}")
             self.exchange.insert_ioc_order(
                 "FUTURE", price=bid_price, volume=(-1 * total_delta), side=Side.BUY
             )
         else:
-            ask_price = round_down_to_tick(theo)
+            ask_price = round_down_to_tick(theo - 0.5 * self.credit)
+            logger.info(f"Hedging by selling FUTURE at price {ask_price}")
             self.exchange.insert_ioc_order(
                 "FUTURE", price=ask_price, volume=total_delta, side=Side.SELL
             )
