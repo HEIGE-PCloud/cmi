@@ -190,7 +190,7 @@ class Hedge:
     def hedge(self, theo: float):
         if time.time() - self.reset_time <= self.hedge_interval:
             return
-        
+
         positions = self.exchange.get_positions()
         call_delta = self.pricer.call_delta
         put_delta = self.pricer.put_delta
@@ -203,12 +203,11 @@ class Hedge:
         if put_delta is None:
             logger.warn("Hedging failed, put delta is None")
             return
-        logger.info(f"Positions: {positions}")
 
         total_delta = int(
-            positions["FUTURE"]
-            + positions["150 CALL"] * call_delta
-            + positions["130 PUT"] * put_delta
+            positions.get("FUTURE", 0)
+            + positions.get("150 CALL", 0) * call_delta
+            + positions.get("130 PUT", 0) * put_delta
         )
         if total_delta == 0:
             logger.info("Hedging delta is 0, no need to hedge")
