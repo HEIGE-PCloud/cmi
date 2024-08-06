@@ -23,7 +23,7 @@ def main():
         Call(cmi, "150 CALL", cards, pricer),
         Put(cmi, "130 PUT", cards, pricer),
     ]
-    hedge = Hedge()
+    hedge = Hedge(cmi, pricer)
     trade_config = TradeConfig(cmi, cards, pricer, strategies, hedge=hedge)
     Thread(target=start_ui, args=(cmi, trade_config), daemon=True).start()
     trade(trade_config)
