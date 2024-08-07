@@ -182,8 +182,7 @@ class ControlTable:
             columns=columns,
             editable=True,
             index_position=None,
-            header_row=False,
-            auto_edit=True
+            header_row=False
         )
 
         self.source.on_change("data", self.sync_config)
@@ -205,9 +204,9 @@ class ControlTable:
                 case "Future mm_interval":
                     self.config.future.mm_interval = new["value"][idx]
                 case "Call mm_interval":
-                    self.config.future.mm_interval = new["value"][idx]
+                    self.config.call.mm_interval = new["value"][idx]
                 case "Put mm_interval":
-                    self.config.future.mm_interval = new["value"][idx]
+                    self.config.put.mm_interval = new["value"][idx]
                 case _:
                     logger.warn(f"Invalid config field {field}")
 
