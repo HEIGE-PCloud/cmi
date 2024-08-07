@@ -77,6 +77,7 @@ class Strategy:
         self.credit = 1.0
         self.position_limit = 100
         self.interval = interval
+        self.enable = True
         self.reset()
 
     def make_market(self):
