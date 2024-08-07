@@ -126,9 +126,10 @@ class FutureUI:
     def __init__(self, config: TradeConfig) -> None:
         self.config = config
         self.field_name = [
-            "Future bid",
-            "Future theo",
             "Future ask",
+            "Future theo",
+            "Future bid",
+            "Future credit",
         ]
         self.source = ColumnDataSource(
             data=dict(field_name=self.field_name, value=[None] * len(self.field_name))
@@ -149,9 +150,10 @@ class FutureUI:
         new_data = dict(
             field_name=self.field_name,
             value=[
-                self.config.future.bid_price,
-                self.config.future.theo_price,
                 self.config.future.ask_price,
+                self.config.future.theo_price,
+                self.config.future.bid_price,
+                self.config.future.credit,
             ],
         )
         self.source.data = new_data
