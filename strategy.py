@@ -1,6 +1,7 @@
 import queue
 import threading
 import time
+from typing import Optional
 from cards import Cards
 from exchange import Exchange
 from model import Side
@@ -187,30 +188,39 @@ class Hedge:
         self.has_hedged = False
         self.reset()
 
+    def compute_total_delta(self) -> Optional[float]:
+        positions = self.exchange.get_positions()
+        call_delta = self.pricer.call_delta
+        put_delta = self.pricer.put_delta
+        if positions is None:
+            logger.warn("Hedging failed, get positions failed")
+            return None
+        if call_delta is None:
+            logger.warn("Hedging failed, call delta is None")
+            return None
+        if put_delta is None:
+            logger.warn("Hedging failed, put delta is None")
+            return None
+
+        total_delta = (
+            positions.get("FUTURE", 0)
+            + positions.get("150 CALL", 0) * call_delta
+            + positions.get("130 PUT", 0) * put_delta
+        )
+        return total_delta
+
     def hedge(self, theo: float):
         if time.time() - self.reset_time <= self.hedge_interval:
             return
         if self.has_hedged:
             return
 
-        positions = self.exchange.get_positions()
-        call_delta = self.pricer.call_delta
-        put_delta = self.pricer.put_delta
-        if positions is None:
-            logger.warn("Hedging failed, get positions failed")
+        total_delta = self.compute_total_delta()
+        if total_delta is None:
             return
-        if call_delta is None:
-            logger.warn("Hedging failed, call delta is None")
-            return
-        if put_delta is None:
-            logger.warn("Hedging failed, put delta is None")
-            return
-
-        total_delta = int(
-            positions.get("FUTURE", 0)
-            + positions.get("150 CALL", 0) * call_delta
-            + positions.get("130 PUT", 0) * put_delta
-        )
+        
+        total_delta = int(total_delta)
+        
         if total_delta == 0:
             logger.info("Hedging delta is 0, no need to hedge")
             self.has_hedged = True

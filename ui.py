@@ -97,6 +97,7 @@ class MonitorTable:
             "130 Put bid",
             "150 Call delta",
             "130 Put delta",
+            "Total delta"
         ]
         self.source = ColumnDataSource(
             data=dict(field_name=self.field_name, value=[None] * len(self.field_name))
@@ -132,6 +133,7 @@ class MonitorTable:
                 self.config.put.bid_price,
                 self.config.pricer.call_delta,
                 self.config.pricer.put_delta,
+                self.config.hedge.compute_total_delta()
             ],
         )
         self.source.data = new_data
