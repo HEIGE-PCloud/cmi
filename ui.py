@@ -122,6 +122,40 @@ class TheoUI:
         self.source.data = new_data
 
 
+class FutureUI:
+    def __init__(self, config: TradeConfig) -> None:
+        self.confg = config
+        self.field_name = [
+            "Future bid",
+            "Future theo",
+            "Future ask",
+        ]
+        self.source = ColumnDataSource(
+            data=dict(field_name=self.field_name, value=[None] * len(self.field_name))
+        )
+        columns = [
+            TableColumn(field="field_name", title="Field Name"),
+            TableColumn(field="value", title="Value"),
+        ]
+
+        self.data_table = DataTable(
+            source = self.source, columns=columns, index_position=None, header_row=False
+        )
+
+    def render(self):
+        return self.data_table
+    
+    def update(self):
+        new_data = dict(
+            field_name=self.field_name,
+            value=[
+                self.config.future.bid_price,
+                self.config.pricer.theo_price,
+                self.config.pricer.ask_price,
+            ],
+        )
+        self.source.data = new_data
+
 class MainUI:
     def __init__(self, exchange: Exchange, config: TradeConfig):
         self.exchange = exchange
@@ -131,9 +165,10 @@ class MainUI:
         update_functions = []
         cardsUI = CardsUI(self.config)
         theoUI = TheoUI(self.config)
+        futureUI = FutureUI(self.config)
         update_functions.append(theoUI.update)
 
-        doc.add_root(row(cardsUI.render(), theoUI.render()))
+        doc.add_root(row(cardsUI.render(), column(theoUI.render(), futureUI.render())))
 
         def periodic_callbacks():
             for update_function in update_functions:
