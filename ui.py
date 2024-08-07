@@ -85,18 +85,19 @@ class MonitorTable:
     def __init__(self, config: TradeConfig):
         self.config = config
         self.field_name = [
+            "Rank",
             "Cards theo",
             "Future ask",
             "Future theo",
             "Future bid",
-            "150 Call ask",
-            "150 Call theo",
-            "150 Call bid",
-            "130 Put ask",
-            "130 Put theo",
-            "130 Put bid",
-            "150 Call delta",
-            "130 Put delta",
+            "Call ask",
+            "Call theo",
+            "Call bid",
+            "Put ask",
+            "Put theo",
+            "Put bid",
+            "Call delta",
+            "Put delta",
             "Total delta"
         ]
         self.source = ColumnDataSource(
@@ -122,6 +123,7 @@ class MonitorTable:
         new_data = dict(
             field_name=self.field_name,
             value=[
+                self.config.exchange.get_rank(),
                 self.config.cards.get_theoretical_price(),
                 self.config.future.ask_price,
                 self.config.future.theo_price,
