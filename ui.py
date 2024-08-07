@@ -112,8 +112,7 @@ class MonitorTable:
             columns=columns,
             index_position=None,
             header_row=False,
-            height=25 * len(self.field_name),
-            auto_edit=True
+            height=25 * len(self.field_name)
         )
 
     def render(self):
