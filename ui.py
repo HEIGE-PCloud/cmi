@@ -1,4 +1,3 @@
-import datetime
 from bokeh.server.server import Server
 from tornado.ioloop import IOLoop
 from bokeh.document import Document
@@ -9,12 +8,10 @@ from bokeh.models import (
     Button,
     DataTable,
     TableColumn,
+    NumberEditor,
 )
 from bokeh.layouts import layout, column, row
-from bokeh.plotting import figure
-import numpy as np
 
-from typing import Callable, List, Optional
 
 from exchange import Exchange
 from trade_config import TradeConfig
@@ -84,25 +81,32 @@ class CardsUI:
         return res
 
 
-class TheoUI:
+class MonitorTable:
     def __init__(self, config: TradeConfig):
         self.config = config
         self.field_name = [
+            "Cards theo",
+            "Future ask",
             "Future theo",
+            "Future bid",
+            "150 Call ask",
             "150 Call theo",
+            "150 Call bid",
+            "130 Put ask",
             "130 Put theo",
+            "130 Put bid",
             "150 Call delta",
             "130 Put delta",
         ]
         self.source = ColumnDataSource(
-            data=dict(field_name=self.field_name, value=[None, None, None, None, None])
+            data=dict(field_name=self.field_name, value=[None] * len(self.field_name))
         )
         columns = [
             TableColumn(field="field_name", title="Field Name"),
             TableColumn(field="value", title="Value"),
         ]
         self.data_table = DataTable(
-            source=self.source, columns=columns, index_position=None, header_row=False
+            source=self.source, columns=columns, index_position=None, header_row=False, height=25*len(self.field_name)
         )
 
     def render(self):
@@ -113,8 +117,15 @@ class TheoUI:
             field_name=self.field_name,
             value=[
                 self.config.cards.get_theoretical_price(),
-                self.config.pricer.call,
-                self.config.pricer.put,
+                self.config.future.ask_price,
+                self.config.future.theo_price,
+                self.config.future.bid_price,
+                self.config.call.ask_price,
+                self.config.call.theo_price,
+                self.config.call.bid_price,
+                self.config.put.ask_price,
+                self.config.put.theo_price,
+                self.config.put.bid_price,
                 self.config.pricer.call_delta,
                 self.config.pricer.put_delta,
             ],
@@ -122,41 +133,42 @@ class TheoUI:
         self.source.data = new_data
 
 
-class FutureUI:
+class ControlTable:
     def __init__(self, config: TradeConfig) -> None:
         self.config = config
         self.field_name = [
-            "Future ask",
-            "Future theo",
-            "Future bid",
             "Future credit",
         ]
         self.source = ColumnDataSource(
-            data=dict(field_name=self.field_name, value=[None] * len(self.field_name))
+            data=dict(field_name=self.field_name, value=[self.config.future.credit])
         )
         columns = [
             TableColumn(field="field_name", title="Field Name"),
             TableColumn(field="value", title="Value"),
         ]
-
+        
+        for col in columns:
+            if col.field == "value":
+                col.editor = NumberEditor()
+        
         self.data_table = DataTable(
-            source = self.source, columns=columns, index_position=None, header_row=False
+            source=self.source,
+            columns=columns,
+            editable=True,
+            index_position=None,
+            header_row=False,
         )
+
+        self.source.on_change('data', self.sync_config)
 
     def render(self):
         return self.data_table
-    
-    def update(self):
-        new_data = dict(
-            field_name=self.field_name,
-            value=[
-                self.config.future.ask_price,
-                self.config.future.theo_price,
-                self.config.future.bid_price,
-                self.config.future.credit,
-            ],
-        )
-        self.source.data = new_data
+
+    def sync_config(self, attr, old, new):
+        for idx, field in enumerate(self.field_name):
+            if field == "Future credit":
+                self.config.future.credit = new['value'][idx]
+
 
 class MainUI:
     def __init__(self, exchange: Exchange, config: TradeConfig):
@@ -165,9 +177,9 @@ class MainUI:
 
     def ui_root(self, doc: Document):
         cardsUI = CardsUI(self.config)
-        theoUI = TheoUI(self.config)
-        futureUI = FutureUI(self.config)
-        update_functions = [theoUI.update, futureUI.update]
+        theoUI = MonitorTable(self.config)
+        futureUI = ControlTable(self.config)
+        update_functions = [theoUI.update]
 
         doc.add_root(row(cardsUI.render(), column(theoUI.render(), futureUI.render())))
 
