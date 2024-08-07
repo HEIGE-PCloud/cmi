@@ -182,6 +182,7 @@ class ControlTable:
             editable=True,
             index_position=None,
             header_row=False,
+            auto_edit=True
         )
 
         self.source.on_change("data", self.sync_config)
