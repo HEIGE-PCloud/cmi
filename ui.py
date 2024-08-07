@@ -136,7 +136,7 @@ class MonitorTable:
                 self.config.put.bid_price,
                 self.config.pricer.call_delta,
                 self.config.pricer.put_delta,
-                self.config.hedge.compute_total_delta()
+                self.config.hedger.compute_total_delta()
             ],
         )
         self.source.data = new_data
@@ -150,9 +150,12 @@ class ControlTable:
             "Call credit",
             "Put credit",
             "Hedge interval",
-            "Future mm_interval",
-            "Call mm_interval",
-            "Put mm_interval",
+            "Future interval",
+            "Call interval",
+            "Put interval",
+            "Enable Future",
+            "Enable Call",
+            "Enable Put",
         ]
         self.source = ColumnDataSource(
             data=dict(
@@ -161,10 +164,13 @@ class ControlTable:
                     self.config.future.credit,
                     self.config.call.credit,
                     self.config.put.credit,
-                    self.config.hedge.hedge_interval,
-                    self.config.future.mm_interval,
-                    self.config.call.mm_interval,
-                    self.config.put.mm_interval,
+                    self.config.hedger.hedge_interval,
+                    self.config.future.interval,
+                    self.config.call.interval,
+                    self.config.put.interval,
+                    "TODO",
+                    "TODO",
+                    "TODO",
                 ],
             )
         )
@@ -200,13 +206,13 @@ class ControlTable:
                 case "Put credit":
                     self.config.put.credit = new["value"][idx]
                 case "Hedge interval":
-                    self.config.hedge.hedge_interval = new["value"][idx]
-                case "Future mm_interval":
-                    self.config.future.mm_interval = new["value"][idx]
-                case "Call mm_interval":
-                    self.config.call.mm_interval = new["value"][idx]
-                case "Put mm_interval":
-                    self.config.put.mm_interval = new["value"][idx]
+                    self.config.hedger.hedge_interval = new["value"][idx]
+                case "Future interval":
+                    self.config.future.interval = new["value"][idx]
+                case "Call interval":
+                    self.config.call.interval = new["value"][idx]
+                case "Put interval":
+                    self.config.put.interval = new["value"][idx]
                 case _:
                     logger.warn(f"Invalid config field {field}")
 

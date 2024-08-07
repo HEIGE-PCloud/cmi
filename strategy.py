@@ -70,13 +70,13 @@ class Pricer:
 
 
 class Strategy:
-    def __init__(self, exchange: Exchange, symbol: str) -> None:
+    def __init__(self, exchange: Exchange, symbol: str, interval: float) -> None:
         self.exchange = exchange
         self.symbol = symbol
         self.tick_size = exchange.products[symbol].tickSize
         self.credit = 1.0
         self.position_limit = 100
-        self.mm_interval = 9.5
+        self.interval = interval
         self.reset()
 
     def make_market(self):
@@ -119,8 +119,8 @@ class Strategy:
 
 
 class Future(Strategy):
-    def __init__(self, exchange: Exchange, symbol: str, cards: Cards) -> None:
-        super().__init__(exchange, symbol)
+    def __init__(self, exchange: Exchange, symbol: str, cards: Cards, interval: float) -> None:
+        super().__init__(exchange, symbol, interval)
         self.cards = cards
         self.position_limit = 100
         self.credit = 0.5
@@ -129,7 +129,7 @@ class Future(Strategy):
         if self.theo_price is None:
             self.theo_price = self.cards.get_theoretical_price()
 
-        if time.time() - self.reset_time <= self.mm_interval:
+        if time.time() - self.reset_time <= self.interval:
             super().make_market()
         else:
             self.exchange.delete_orders(self.symbol)
@@ -137,9 +137,9 @@ class Future(Strategy):
 
 class Call(Strategy):
     def __init__(
-        self, exchange: Exchange, symbol: str, cards: Cards, pricer: Pricer
+        self, exchange: Exchange, symbol: str, cards: Cards, pricer: Pricer, interval: float
     ) -> None:
-        super().__init__(exchange, symbol)
+        super().__init__(exchange, symbol, interval)
         self.cards = cards
         self.position_limit = 250
         self.credit = 1
@@ -151,7 +151,7 @@ class Call(Strategy):
             logger.warn("Call has None theo_price")
             return
 
-        if time.time() - self.reset_time <= self.mm_interval:
+        if time.time() - self.reset_time <= self.interval:
             super().make_market()
         else:
             self.exchange.delete_orders(self.symbol)
@@ -159,9 +159,9 @@ class Call(Strategy):
 
 class Put(Strategy):
     def __init__(
-        self, exchange: Exchange, symbol: str, cards: Cards, pricer: Pricer
+        self, exchange: Exchange, symbol: str, cards: Cards, pricer: Pricer, interval: float
     ) -> None:
-        super().__init__(exchange, symbol)
+        super().__init__(exchange, symbol, interval)
         self.cards = cards
         self.position_limit = 250
         self.credit = 1
@@ -173,17 +173,20 @@ class Put(Strategy):
             logger.warn("Put has None theo_price")
             return
 
-        if time.time() - self.reset_time <= self.mm_interval:
+        if time.time() - self.reset_time <= self.interval:
             super().make_market()
         else:
             self.exchange.delete_orders(self.symbol)
 
 
-class Hedge:
-    def __init__(self, exchange: Exchange, pricer: Pricer) -> None:
+class Hedger:
+    def __init__(self, exchange: Exchange, pricer: Pricer, future: Future, call: Call, put: Put, interval: float) -> None:
         self.exchange = exchange
         self.pricer = pricer
-        self.hedge_interval = 9.6
+        self.hedge_interval = interval
+        self.future = future
+        self.call = call
+        self.put = put
         self.credit = 0
         self.has_hedged = False
         self.reset()
@@ -203,9 +206,9 @@ class Hedge:
             return None
 
         total_delta = (
-            positions.get("FUTURE", 0)
-            + positions.get("150 CALL", 0) * call_delta
-            + positions.get("130 PUT", 0) * put_delta
+            positions.get(self.future.symbol, 0)
+            + positions.get(self.call.symbol, 0) * call_delta
+            + positions.get(self.put.symbol, 0) * put_delta
         )
         return total_delta
 
@@ -225,16 +228,16 @@ class Hedge:
             logger.info("Hedging delta is 0, no need to hedge")
             self.has_hedged = True
             return
-
+        tick_size = self.future.tick_size
         logger.info(f"Hedging total_delta {total_delta}")
         if total_delta < 0:
-            bid_price = round_up_to_tick(theo + 0.5 * self.credit, 0.5)
+            bid_price = round_up_to_tick(theo + tick_size * self.credit, tick_size)
             logger.info(f"Hedging by buying FUTURE at price {bid_price}")
             self.exchange.insert_ioc_order(
                 "FUTURE", price=bid_price, volume=(-1 * total_delta), side=Side.BUY
             )
         else:
-            ask_price = round_down_to_tick(theo - 0.5 * self.credit, 0.5)
+            ask_price = round_down_to_tick(theo - tick_size * self.credit, tick_size)
             logger.info(f"Hedging by selling FUTURE at price {ask_price}")
             self.exchange.insert_ioc_order(
                 "FUTURE", price=ask_price, volume=total_delta, side=Side.SELL

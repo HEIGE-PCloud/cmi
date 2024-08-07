@@ -21,4 +21,4 @@ def trade(config: TradeConfig):
         else:
             config.exchange.delete_all_orders()
 
-        config.hedge.hedge(config.cards.get_theoretical_price())
+        config.hedger.hedge(config.cards.get_theoretical_price())

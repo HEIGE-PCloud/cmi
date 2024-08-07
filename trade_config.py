@@ -2,7 +2,7 @@ from typing import List
 from cards import Cards
 from exchange import Exchange
 
-from strategy import Call, Future, Hedge, Pricer, Put, Strategy
+from strategy import Call, Future, Hedger, Pricer, Put, Strategy
 
 
 class TradeConfig:
@@ -15,7 +15,7 @@ class TradeConfig:
         future: Future,
         call: Call,
         put: Put,
-        hedge: Hedge
+        hedger: Hedger
     ) -> None:
         self.exchange = exchange
         self.cards = cards
@@ -25,7 +25,7 @@ class TradeConfig:
         self.future = future
         self.call = call
         self.put = put
-        self.hedge = hedge
+        self.hedger = hedger
         self.strategies: List[Strategy] = [future, call, put]
 
     def update_cards(self, cards = None):
@@ -33,7 +33,7 @@ class TradeConfig:
         self.future.reset()
         self.call.reset()
         self.put.reset()
-        self.hedge.reset()
+        self.hedger.reset()
 
         if cards is None:
             self.cards.set_chosen_cards(self.get_cards_value())
