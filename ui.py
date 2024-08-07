@@ -15,7 +15,8 @@ from bokeh.layouts import layout, column, row
 
 from exchange import Exchange
 from trade_config import TradeConfig
-
+import logging
+logger = logging.getLogger(__name__)
 IP_ADDRESS = "0.0.0.0"
 
 
@@ -192,8 +193,23 @@ class ControlTable:
 
     def sync_config(self, attr, old, new):
         for idx, field in enumerate(self.field_name):
-            if field == "Future credit":
-                self.config.future.credit = new["value"][idx]
+            match field:
+                case "Future credit":
+                    self.config.future.credit = new["value"][idx]
+                case "Call credit":
+                    self.config.call.credit = new["value"][idx]
+                case "Put credit":
+                    self.config.put.credit = new["value"][idx]
+                case "Hedge interval":
+                    self.config.hedge.hedge_interval = new["value"][idx]
+                case "Future mm_interval":
+                    self.config.future.mm_interval = new["value"][idx]
+                case "Call mm_interval":
+                    self.config.future.mm_interval = new["value"][idx]
+                case "Put mm_interval":
+                    self.config.future.mm_interval = new["value"][idx]
+                case _:
+                    logger.warn(f"Invalid config field {field}")
 
 
 class MainUI:
