@@ -162,11 +162,10 @@ class MainUI:
         self.config = config
 
     def ui_root(self, doc: Document):
-        update_functions = []
         cardsUI = CardsUI(self.config)
         theoUI = TheoUI(self.config)
         futureUI = FutureUI(self.config)
-        update_functions.append(theoUI.update)
+        update_functions = [theoUI.update, futureUI.update]
 
         doc.add_root(row(cardsUI.render(), column(theoUI.render(), futureUI.render())))
 
