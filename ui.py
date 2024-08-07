@@ -106,7 +106,11 @@ class MonitorTable:
             TableColumn(field="value", title="Value"),
         ]
         self.data_table = DataTable(
-            source=self.source, columns=columns, index_position=None, header_row=False, height=25*len(self.field_name)
+            source=self.source,
+            columns=columns,
+            index_position=None,
+            header_row=False,
+            height=25 * len(self.field_name),
         )
 
     def render(self):
@@ -138,19 +142,36 @@ class ControlTable:
         self.config = config
         self.field_name = [
             "Future credit",
+            "Call credit",
+            "Put credit",
+            "Hedge interval",
+            "Future mm_interval",
+            "Call mm_interval",
+            "Put mm_interval",
         ]
         self.source = ColumnDataSource(
-            data=dict(field_name=self.field_name, value=[self.config.future.credit])
+            data=dict(
+                field_name=self.field_name,
+                value=[
+                    self.config.future.credit,
+                    self.config.call.credit,
+                    self.config.put.credit,
+                    self.config.hedge.hedge_interval,
+                    self.config.future.mm_interval,
+                    self.config.call.mm_interval,
+                    self.config.put.mm_interval,
+                ],
+            )
         )
         columns = [
             TableColumn(field="field_name", title="Field Name"),
             TableColumn(field="value", title="Value"),
         ]
-        
+
         for col in columns:
             if col.field == "value":
                 col.editor = NumberEditor()
-        
+
         self.data_table = DataTable(
             source=self.source,
             columns=columns,
@@ -159,7 +180,7 @@ class ControlTable:
             header_row=False,
         )
 
-        self.source.on_change('data', self.sync_config)
+        self.source.on_change("data", self.sync_config)
 
     def render(self):
         return self.data_table
@@ -167,7 +188,7 @@ class ControlTable:
     def sync_config(self, attr, old, new):
         for idx, field in enumerate(self.field_name):
             if field == "Future credit":
-                self.config.future.credit = new['value'][idx]
+                self.config.future.credit = new["value"][idx]
 
 
 class MainUI:
