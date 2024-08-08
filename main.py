@@ -1,5 +1,4 @@
 import logging
-import sys
 from threading import Thread
 
 from cards import Cards
