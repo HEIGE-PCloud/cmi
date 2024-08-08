@@ -175,6 +175,7 @@ class ControlTable:
         self.field_name = [
             "Thread count",
             "Iteration count",
+            "Hedger credit"
             "Future credit",
             "Call credit",
             "Put credit",
@@ -189,6 +190,7 @@ class ControlTable:
                 value=[
                     self.config.pricer.thread_count,
                     self.config.pricer.iteration_count,
+                    self.config.hedger.credit,
                     self.config.future.credit,
                     self.config.call.credit,
                     self.config.put.credit,
@@ -228,6 +230,8 @@ class ControlTable:
                     self.config.pricer.thread_count = new["value"][idx]
                 case "Iteration count":
                     self.config.pricer.iteration_count = new["value"][idx]
+                case "Hedger credit":
+                    self.config.hedger.credit = new["value"][idx]
                 case "Future credit":
                     self.config.future.credit = new["value"][idx]
                 case "Call credit":

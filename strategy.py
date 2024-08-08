@@ -215,6 +215,7 @@ class Hedger:
         call: Call,
         put: Put,
         interval: float,
+        credit: float = 0.5
     ) -> None:
         self.exchange = exchange
         self.pricer = pricer
@@ -222,7 +223,7 @@ class Hedger:
         self.future = future
         self.call = call
         self.put = put
-        self.credit = 0
+        self.credit = credit
         self.has_hedged = False
         self.reset()
 
