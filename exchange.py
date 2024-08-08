@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 import api
 from api import get_all_products, sign_in, sign_up
-from model import (OrderCriteria, OrderRequest, OrderStatus, PriceBook, PriceVolume, ProductResponse, Side, )
+from model import (NewsResponse, OrderCriteria, OrderRequest, OrderStatus, PriceBook, PriceVolume, ProductResponse, Side, )
 
 
 class Exchange:
@@ -75,8 +75,11 @@ class Exchange:
             res[position.product] = position.volume
         return res
 
-    def get_news(self):
-        return api.get_news(self._auth)
+    def get_news(self) -> List[NewsResponse]:
+        res = api.get_news(self._auth)
+        if res is None:
+            return []
+        return res.root
 
     def get_product(self, product: str) -> ProductResponse:
         """
