@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 class Pricer:
 
-    def __init__(self, cards: Cards, threads: int, iterations: int) -> None:
+    def __init__(self, cards: Cards, thread_count: int, iteration_count: int) -> None:
         compile_option_pricing_cpp()
         self.reset()
         self.cards = cards
         self.next_cards = [None] * 14
-        self.threads = threads
-        self.iterations = iterations
+        self.thread_count = thread_count
+        self.iteration_count = iteration_count
         self.queue: queue.Queue[int] = queue.Queue()
         self.pricer_thread = threading.Thread(
             target=self.option_pricing_cpp_thread, daemon=True
@@ -36,11 +36,13 @@ class Pricer:
             next_card = self.queue.get()
             if next_card == -1:
                 self.call, self.put, self.call_delta, self.put_delta = (
-                    option_pricing_cpp(self.cards, self.threads, self.iterations)
+                    option_pricing_cpp(
+                        self.cards, self.thread_count, self.iteration_count
+                    )
                 )
             elif self.cards.get_chosen_cards_num() < 20:
                 self.next_cards[int(next_card)] = option_pricing_next_cpp(
-                    self.cards, next_card, self.threads, self.iterations
+                    self.cards, next_card, self.thread_count, self.iteration_count
                 )
             self.queue.task_done()
 
@@ -120,7 +122,9 @@ class Strategy:
 
 
 class Future(Strategy):
-    def __init__(self, exchange: Exchange, symbol: str, cards: Cards, interval: float) -> None:
+    def __init__(
+        self, exchange: Exchange, symbol: str, cards: Cards, interval: float
+    ) -> None:
         super().__init__(exchange, symbol, interval)
         self.cards = cards
         self.position_limit = 100
@@ -138,7 +142,12 @@ class Future(Strategy):
 
 class Call(Strategy):
     def __init__(
-        self, exchange: Exchange, symbol: str, cards: Cards, pricer: Pricer, interval: float
+        self,
+        exchange: Exchange,
+        symbol: str,
+        cards: Cards,
+        pricer: Pricer,
+        interval: float,
     ) -> None:
         super().__init__(exchange, symbol, interval)
         self.cards = cards
@@ -160,7 +169,12 @@ class Call(Strategy):
 
 class Put(Strategy):
     def __init__(
-        self, exchange: Exchange, symbol: str, cards: Cards, pricer: Pricer, interval: float
+        self,
+        exchange: Exchange,
+        symbol: str,
+        cards: Cards,
+        pricer: Pricer,
+        interval: float,
     ) -> None:
         super().__init__(exchange, symbol, interval)
         self.cards = cards
@@ -181,7 +195,15 @@ class Put(Strategy):
 
 
 class Hedger:
-    def __init__(self, exchange: Exchange, pricer: Pricer, future: Future, call: Call, put: Put, interval: float) -> None:
+    def __init__(
+        self,
+        exchange: Exchange,
+        pricer: Pricer,
+        future: Future,
+        call: Call,
+        put: Put,
+        interval: float,
+    ) -> None:
         self.exchange = exchange
         self.pricer = pricer
         self.hedge_interval = interval
@@ -222,9 +244,9 @@ class Hedger:
         total_delta = self.compute_total_delta()
         if total_delta is None:
             return
-        
+
         total_delta = int(total_delta)
-        
+
         if total_delta == 0:
             logger.info("Hedging delta is 0, no need to hedge")
             self.has_hedged = True

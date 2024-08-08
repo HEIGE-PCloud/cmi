@@ -18,14 +18,14 @@ DEFAULT_PUT_SYMBOL = "130 PUT"
 DEFAULT_STRATEGY_INTERVAL = 9
 DEFAULT_HEDGER_INTERVAL = 9.1
 DEFAULT_THREAD_COUNT = 10
-DEFAULT_ITERATION_COUNT = 100000
+DEFAULT_ITERATION_COUNT = 200000
 
 cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
 
 
 def main():
     cards = Cards()
-    pricer = Pricer(cards, threads=DEFAULT_THREAD_COUNT, iterations=DEFAULT_ITERATION_COUNT)
+    pricer = Pricer(cards, thread_count=DEFAULT_THREAD_COUNT, iteration_count=DEFAULT_ITERATION_COUNT)
     future = Future(cmi, DEFAULT_FUTURE_SYMBOL, cards, DEFAULT_STRATEGY_INTERVAL)
     call = Call(cmi, DEFAULT_CALL_SYMBOL, cards, pricer, DEFAULT_STRATEGY_INTERVAL)
     put = Put(cmi, DEFAULT_PUT_SYMBOL, cards, pricer, DEFAULT_STRATEGY_INTERVAL)

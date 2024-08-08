@@ -146,6 +146,8 @@ class ControlTable:
     def __init__(self, config: TradeConfig) -> None:
         self.config = config
         self.field_name = [
+            "Thread count",
+            "Iteration count",
             "Future credit",
             "Call credit",
             "Put credit",
@@ -161,6 +163,8 @@ class ControlTable:
             data=dict(
                 field_name=self.field_name,
                 value=[
+                    self.config.pricer.thread_count,
+                    self.config.pricer.iteration_count,
                     self.config.future.credit,
                     self.config.call.credit,
                     self.config.put.credit,
@@ -199,6 +203,10 @@ class ControlTable:
     def sync_config(self, attr, old, new):
         for idx, field in enumerate(self.field_name):
             match field:
+                case "Thread count":
+                    self.config.pricer.thread_count = new["value"][idx]
+                case "Iteration count":
+                    self.config.pricer.iteration_count = new["value"][idx]
                 case "Future credit":
                     self.config.future.credit = new["value"][idx]
                 case "Call credit":
