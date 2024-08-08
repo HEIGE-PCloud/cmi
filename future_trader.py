@@ -12,13 +12,12 @@ def main():
     cmi = Exchange("FutureTrader", "FutureTrader", sign_up_for_new_account=False)
     cards = Cards()
     while True:
-        news = cmi.get_news()
-        cards = news_to_cards(news)
-        size = len(cards)
+        news = news_to_cards(cmi.get_news())
+        size = len(news)
         if size == cards.get_chosen_cards_num():
             pass
         else:
-            cards.set_chosen_cards(news_to_cards(news))
+            cards.set_chosen_cards(news)
             cmi.delete_all_orders()
             theo = cards.get_theoretical_price()
             bid_price = round_down_to_tick(theo, 0.5)
