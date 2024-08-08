@@ -44,15 +44,16 @@ class TradeConfig:
         self.manul_news_state: ManualNewsState = ManualNewsState.PAUSE
 
     def update_cards(self, cards=None):
-        self.pricer.reset()
-        self.future.reset()
-        self.call.reset()
-        self.put.reset()
-        self.hedger.reset()
-
         if cards is None:
             self.cards.set_chosen_cards(self.get_cards_value())
         else:
             self.cards.set_chosen_cards(cards)
 
+        self.pricer.reset()
         self.pricer.pricing()
+
+        self.future.reset()
+        self.call.reset()
+        self.put.reset()
+        self.hedger.reset()
+
