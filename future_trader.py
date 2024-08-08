@@ -14,11 +14,9 @@ def main():
     while True:
         news = news_to_cards(cmi.get_news())
         size = len(news)
-        if size == cards.get_chosen_cards_num():
-            pass
-        else:
-            cards.set_chosen_cards(news)
+        if size != cards.get_chosen_cards_num():
             cmi.delete_all_orders()
+            cards.set_chosen_cards(news)
             theo = cards.get_theoretical_price()
             bid_price = round_down_to_tick(theo, 0.5)
             ask_price = round_up_to_tick(theo, 0.5)
