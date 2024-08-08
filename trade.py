@@ -39,4 +39,5 @@ def manual_news_trade(config: TradeConfig):
                 config.call.make_market()
                 config.put.make_market()
             case ManualNewsState.HEDGE:
+                config.exchange.delete_all_orders()
                 config.hedger.hedge(config.cards.get_theoretical_price())
