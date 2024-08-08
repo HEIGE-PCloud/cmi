@@ -22,9 +22,9 @@ def full_auto_trade(config: TradeConfig):
         if size != config.cards.get_chosen_cards_num():
             config.update_cards(cards)
 
-        config.future.make_market()
-        config.call.make_market()
-        config.put.make_market()
+        config.future.make_market(auto=True)
+        config.call.make_market(auto=True)
+        config.put.make_market(auto=True)
 
         config.hedger.hedge(config.cards.get_theoretical_price())
 

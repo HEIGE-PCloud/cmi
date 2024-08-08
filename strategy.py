@@ -130,9 +130,13 @@ class Future(Strategy):
         self.position_limit = 100
         self.credit = 0.5
 
-    def make_market(self):
+    def make_market(self, auto=False):
         if self.theo_price is None:
             self.theo_price = self.cards.get_theoretical_price()
+
+        if not auto:
+            super().make_market()
+            return
 
         if time.time() - self.reset_time <= self.interval:
             super().make_market()
@@ -155,12 +159,16 @@ class Call(Strategy):
         self.credit = 1
         self.pricer = pricer
 
-    def make_market(self):
+    def make_market(self, auto=False):
         self.theo_price = self.pricer.call
         if self.theo_price is None:
             logger.warn("Call has None theo_price")
             return
 
+        if not auto:
+            super().make_market()
+            return
+        
         if time.time() - self.reset_time <= self.interval:
             super().make_market()
         else:
@@ -182,10 +190,14 @@ class Put(Strategy):
         self.credit = 1
         self.pricer = pricer
 
-    def make_market(self):
+    def make_market(self, auto=False):
         self.theo_price = self.pricer.put
         if self.theo_price is None:
             logger.warn("Put has None theo_price")
+            return
+        
+        if not auto:
+            super().make_market()
             return
 
         if time.time() - self.reset_time <= self.interval:
