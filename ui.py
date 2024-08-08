@@ -175,7 +175,7 @@ class ControlTable:
         self.field_name = [
             "Thread count",
             "Iteration count",
-            "Hedger credit"
+            "Hedger credit",
             "Future credit",
             "Call credit",
             "Put credit",
