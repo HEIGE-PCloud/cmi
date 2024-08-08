@@ -1,4 +1,5 @@
 import logging
+import sys
 from threading import Thread
 
 from cards import Cards
@@ -7,6 +8,7 @@ from strategy import Call, Future, Hedger, Pricer, Put
 from trade import full_auto_trade, manual_news_trade
 from trade_config import Mode, TradeConfig
 from ui import start_ui
+import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +21,23 @@ DEFAULT_STRATEGY_INTERVAL = 9
 DEFAULT_HEDGER_INTERVAL = 9.1
 DEFAULT_THREAD_COUNT = 10
 DEFAULT_ITERATION_COUNT = 200000
-DEFAULT_MODE = Mode.MANUAL_NEWS
+DEFAULT_MODE = Mode.FULL_AUTO
 
 cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='cmi')
+    parser.add_argument('--manual', action='store_true', help='Set the manual mode')
+    args = parser.parse_args()
+    if args.manual:
+        global DEFAULT_MODE
+        DEFAULT_MODE = Mode.MANUAL_NEWS
+
+
 def main():
+    parse_args()
+
     cards = Cards()
     pricer = Pricer(
         cards,

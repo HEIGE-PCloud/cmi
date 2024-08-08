@@ -111,6 +111,7 @@ class MonitorTable:
     def __init__(self, config: TradeConfig):
         self.config = config
         self.field_name = [
+            "Mode",
             "Rank",
             "Cards theo",
             "Future ask",
@@ -148,6 +149,7 @@ class MonitorTable:
         new_data = dict(
             field_name=self.field_name,
             value=[
+                self.config.mode.name,
                 self.config.exchange.get_rank(),
                 self.config.cards.get_theoretical_price(),
                 self.config.future.ask_price,
