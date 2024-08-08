@@ -1,6 +1,6 @@
 from typing import List
 from model import NewsResponse
-from trade_config import Mode, TradeConfig
+from trade_config import ManualNewsState, Mode, TradeConfig
 
 
 def news_to_cards(news: List[NewsResponse]) -> List[int]:
@@ -31,4 +31,12 @@ def full_auto_trade(config: TradeConfig):
 def manual_news_trade(config: TradeConfig):
     assert config.mode == Mode.MANUAL_NEWS
     while True:
-        pass
+        match config.manul_news_state:
+            case ManualNewsState.PAUSE:
+                config.exchange.delete_all_orders()
+            case ManualNewsState.TRADE:
+                config.future.make_market()
+                config.call.make_market()
+                config.put.make_market()
+            case ManualNewsState.HEDGE:
+                config.hedger.hedge(config.cards.get_theoretical_price())

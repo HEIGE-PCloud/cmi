@@ -4,7 +4,7 @@ from threading import Thread
 from cards import Cards
 from exchange import Exchange
 from strategy import Call, Future, Hedger, Pricer, Put
-from trade import full_auto_trade
+from trade import full_auto_trade, manual_news_trade
 from trade_config import Mode, TradeConfig
 from ui import start_ui
 
@@ -19,7 +19,7 @@ DEFAULT_STRATEGY_INTERVAL = 9
 DEFAULT_HEDGER_INTERVAL = 9.1
 DEFAULT_THREAD_COUNT = 10
 DEFAULT_ITERATION_COUNT = 200000
-DEFAULT_MODE = Mode.FULL_AUTO
+DEFAULT_MODE = Mode.MANUAL_NEWS
 
 cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
 
@@ -56,7 +56,7 @@ def main():
     if trade_config.mode == Mode.FULL_AUTO:
         full_auto_trade(trade_config)
     elif trade_config.mode == Mode.MANUAL_NEWS:
-        pass
+        manual_news_trade(trade_config)
     else:
         logger.fatal("Unknown mode")
 

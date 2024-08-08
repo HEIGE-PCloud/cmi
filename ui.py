@@ -14,16 +14,40 @@ from bokeh.layouts import layout, column, row
 
 
 from exchange import Exchange
-from trade_config import TradeConfig
+from trade_config import ManualNewsState, TradeConfig
 import logging
+
 logger = logging.getLogger(__name__)
 IP_ADDRESS = "0.0.0.0"
 
 
+class ManualNewsTradeControlUI:
+    def __init__(self, config: TradeConfig) -> None:
+        self.config = config
+        self.labels = ["PAUSE", "TRADE", "HEDGE"]
+
+        def handle(attr: str, old_active: int, new_active: int):
+            self.config.manul_news_state = ManualNewsState(new_active)
+
+        self.radio_button_group = RadioButtonGroup(
+            labels=self.labels, active=config.manul_news_state.value
+        )
+        self.radio_button_group.on_change("active", handle)
+
+    def render(self):
+        return self.radio_button_group
+    
+    def set_trade(self):
+        logger.info("set_trade")
+        self.radio_button_group.active = ManualNewsState.TRADE.value
+        self.config.manul_news_state = ManualNewsState.TRADE
+
+
 class CardsUI:
 
-    def __init__(self, trade_config: TradeConfig):
+    def __init__(self, trade_config: TradeConfig, control_UI: ManualNewsTradeControlUI):
         self.trade_config = trade_config
+        self.control_UI = control_UI
         self.trade_config.get_cards_value = self.get_cards_value
         self.cards_radio_button_groups = []
         self.cards_labels = [
@@ -46,6 +70,7 @@ class CardsUI:
     def render_cards_radio_button_group(self, index: int, active: int):
         def radio_botton_group_on_change(attr: str, old_active: int, new_active: int):
             self.trade_config.update_cards()
+            self.control_UI.set_trade()
 
         radio_button_group = RadioButtonGroup(labels=self.cards_labels, active=active)
         radio_button_group.on_change("active", radio_botton_group_on_change)
@@ -99,7 +124,7 @@ class MonitorTable:
             "Put bid",
             "Call delta",
             "Put delta",
-            "Total delta"
+            "Total delta",
         ]
         self.source = ColumnDataSource(
             data=dict(field_name=self.field_name, value=[None] * len(self.field_name))
@@ -113,7 +138,7 @@ class MonitorTable:
             columns=columns,
             index_position=None,
             header_row=False,
-            height=25 * len(self.field_name)
+            height=25 * len(self.field_name),
         )
 
     def render(self):
@@ -136,7 +161,7 @@ class MonitorTable:
                 self.config.put.bid_price,
                 self.config.pricer.call_delta,
                 self.config.pricer.put_delta,
-                self.config.hedger.compute_total_delta()
+                self.config.hedger.compute_total_delta(),
             ],
         )
         self.source.data = new_data
@@ -186,13 +211,13 @@ class ControlTable:
             field_name_column,
             value_column,
         ]
-        
+
         self.data_table = DataTable(
             source=self.source,
             columns=columns,
             editable=True,
             index_position=None,
-            header_row=False
+            header_row=False,
         )
 
         self.source.on_change("data", self.sync_config)
@@ -231,12 +256,18 @@ class MainUI:
         self.config = config
 
     def ui_root(self, doc: Document):
-        cardsUI = CardsUI(self.config)
+        manual_control_UI = ManualNewsTradeControlUI(self.config)
+        cardsUI = CardsUI(self.config, manual_control_UI)
         theoUI = MonitorTable(self.config)
         futureUI = ControlTable(self.config)
         update_functions = [theoUI.update]
 
-        doc.add_root(row(cardsUI.render(), column(theoUI.render(), futureUI.render())))
+        doc.add_root(
+            row(
+                column(manual_control_UI.render(), cardsUI.render()),
+                column(theoUI.render(), futureUI.render()),
+            )
+        )
 
         def periodic_callbacks():
             for update_function in update_functions:
