@@ -3,7 +3,11 @@ from cards import Cards
 from exchange import Exchange
 
 from strategy import Call, Future, Hedger, Pricer, Put, Strategy
+from enum import Enum
 
+class Mode(Enum):
+    FULL_AUTO = 1
+    MANUAL_NEWS = 2
 
 class TradeConfig:
 
@@ -15,7 +19,8 @@ class TradeConfig:
         future: Future,
         call: Call,
         put: Put,
-        hedger: Hedger
+        hedger: Hedger,
+        mode: Mode
     ) -> None:
         self.exchange = exchange
         self.cards = cards
@@ -27,6 +32,7 @@ class TradeConfig:
         self.put = put
         self.hedger = hedger
         self.strategies: List[Strategy] = [future, call, put]
+        self.mode = mode
 
     def update_cards(self, cards = None):
         self.pricer.reset()

@@ -4,8 +4,8 @@ from threading import Thread
 from cards import Cards
 from exchange import Exchange
 from strategy import Call, Future, Hedger, Pricer, Put
-from trade import trade
-from trade_config import TradeConfig
+from trade import full_auto_trade
+from trade_config import Mode, TradeConfig
 from ui import start_ui
 
 logger = logging.getLogger(__name__)
@@ -19,17 +19,29 @@ DEFAULT_STRATEGY_INTERVAL = 9
 DEFAULT_HEDGER_INTERVAL = 9.1
 DEFAULT_THREAD_COUNT = 10
 DEFAULT_ITERATION_COUNT = 200000
+DEFAULT_MODE = Mode.FULL_AUTO
 
 cmi = Exchange(USERNAME, PASSWORD, sign_up_for_new_account=False)
 
 
 def main():
     cards = Cards()
-    pricer = Pricer(cards, thread_count=DEFAULT_THREAD_COUNT, iteration_count=DEFAULT_ITERATION_COUNT)
+    pricer = Pricer(
+        cards,
+        thread_count=DEFAULT_THREAD_COUNT,
+        iteration_count=DEFAULT_ITERATION_COUNT,
+    )
     future = Future(cmi, DEFAULT_FUTURE_SYMBOL, cards, DEFAULT_STRATEGY_INTERVAL)
     call = Call(cmi, DEFAULT_CALL_SYMBOL, cards, pricer, DEFAULT_STRATEGY_INTERVAL)
     put = Put(cmi, DEFAULT_PUT_SYMBOL, cards, pricer, DEFAULT_STRATEGY_INTERVAL)
-    hedger = Hedger(exchange=cmi, pricer=pricer, future=future, call=call, put=put, interval=DEFAULT_HEDGER_INTERVAL)
+    hedger = Hedger(
+        exchange=cmi,
+        pricer=pricer,
+        future=future,
+        call=call,
+        put=put,
+        interval=DEFAULT_HEDGER_INTERVAL,
+    )
     trade_config = TradeConfig(
         exchange=cmi,
         cards=cards,
@@ -38,9 +50,15 @@ def main():
         call=call,
         put=put,
         hedger=hedger,
+        mode=DEFAULT_MODE,
     )
     Thread(target=start_ui, args=(cmi, trade_config), daemon=True).start()
-    trade(trade_config)
+    if trade_config.mode == Mode.FULL_AUTO:
+        full_auto_trade(trade_config)
+    elif trade_config.mode == Mode.MANUAL_NEWS:
+        pass
+    else:
+        logger.fatal("Unknown mode")
 
 
 if __name__ == "__main__":
