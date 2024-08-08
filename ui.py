@@ -180,9 +180,6 @@ class ControlTable:
             "Future interval",
             "Call interval",
             "Put interval",
-            "Enable Future",
-            "Enable Call",
-            "Enable Put",
         ]
         self.source = ColumnDataSource(
             data=dict(
@@ -197,9 +194,6 @@ class ControlTable:
                     self.config.future.interval,
                     self.config.call.interval,
                     self.config.put.interval,
-                    "TODO",
-                    "TODO",
-                    "TODO",
                 ],
             )
         )
