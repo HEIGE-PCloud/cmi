@@ -174,15 +174,15 @@ class ControlTable:
                 ],
             )
         )
+        field_name_column = TableColumn(field="field_name", title="Field Name")
+        value_column = TableColumn(field="value", title="Value")
+        value_column.editor = NumberEditor()
+
         columns = [
-            TableColumn(field="field_name", title="Field Name"),
-            TableColumn(field="value", title="Value"),
+            field_name_column,
+            value_column,
         ]
-
-        for col in columns:
-            if col.field == "value":
-                col.editor = NumberEditor()
-
+        
         self.data_table = DataTable(
             source=self.source,
             columns=columns,
